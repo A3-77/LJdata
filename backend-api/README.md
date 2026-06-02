@@ -16,6 +16,7 @@ uvicorn dashboard_api.main:app --reload --port 8000
 GET /health
 GET /api/dashboard/overview
 GET /api/dashboard/franchises/rank
+GET /api/dashboard/contribution-flow/heatmap
 GET /api/import/jobs/{job_id}
 ```
 

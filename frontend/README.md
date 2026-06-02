@@ -9,4 +9,4 @@ npm install
 npm run dev
 ```
 
-The dashboard fetches data from the backend API through the Vite `/api` proxy. Start `backend-api` first, or set `VITE_API_BASE_URL` for a deployed API.
+The dashboard fetches data from the backend API through the Vite `/api` proxy. Start `backend-api` first, or set `VITE_API_BASE_URL` for a deployed API. Current charts use ECharts for franchise ranking and province-weight contribution heatmap.

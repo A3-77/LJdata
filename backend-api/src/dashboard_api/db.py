@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import HTTPException
 
 from .config import settings
-from .schemas import ImportJobResponse, OverviewResponse, RankItem
+from .schemas import ContributionHeatmapCell, ContributionHeatmapResponse, ImportJobResponse, OverviewResponse, RankItem
 
 RANK_METRICS = {
     "total_contribution": "total_contribution",
@@ -14,6 +14,12 @@ RANK_METRICS = {
     "inbound_contribution": "inbound_contribution",
     "deduction_total": "deduction_total",
     "outbound_tickets": "outbound_tickets",
+}
+
+FLOW_METRICS = {
+    "contribution_total": "contribution_total",
+    "ticket_count": "ticket_count",
+    "weight_total": "weight_total",
 }
 
 
@@ -127,6 +133,105 @@ def get_franchise_rank(period_month: str, region_code: str, metric: str, directi
         )
         for row in rows
     ]
+
+
+def get_contribution_heatmap(
+    period_month: str,
+    region_code: str,
+    scope_type: str,
+    metric: str,
+    province_limit: int,
+) -> ContributionHeatmapResponse:
+    metric_column = FLOW_METRICS.get(metric)
+    if metric_column is None:
+        raise HTTPException(status_code=400, detail=f"unsupported metric: {metric}")
+    if scope_type not in {"region", "franchise"}:
+        raise HTTPException(status_code=400, detail=f"unsupported scope_type: {scope_type}")
+
+    bounded_limit = max(1, min(province_limit, 50))
+    sql = f"""
+        with province_rank as (
+          select destination_province, sum(abs(coalesce({metric_column}, 0))) as metric_abs_total
+          from fact_contribution_flow
+          where period_month = %s
+            and region_code = %s
+            and scope_type = %s
+            and destination_province is not null
+          group by destination_province
+          order by metric_abs_total desc
+          limit %s
+        ),
+        flow_agg as (
+          select
+            destination_province,
+            weight_band,
+            coalesce(sum({metric_column}), 0) as value,
+            coalesce(sum(ticket_count), 0) as ticket_count,
+            coalesce(sum(weight_total), 0) as weight_total
+          from fact_contribution_flow
+          where period_month = %s
+            and region_code = %s
+            and scope_type = %s
+          group by destination_province, weight_band
+        )
+        select
+          pr.destination_province,
+          wb.weight_band,
+          coalesce(f.value, 0) as value,
+          coalesce(f.ticket_count, 0) as ticket_count,
+          coalesce(f.weight_total, 0) as weight_total,
+          wb.sort_order
+        from province_rank pr
+        cross join dim_weight_band wb
+        left join flow_agg f
+          on f.destination_province = pr.destination_province
+         and f.weight_band = wb.weight_band
+        order by pr.metric_abs_total desc, wb.sort_order, wb.weight_band
+    """
+    with _connect() as conn:
+        rows = conn.execute(
+            sql,
+            (
+                period_month,
+                region_code,
+                scope_type,
+                bounded_limit,
+                period_month,
+                region_code,
+                scope_type,
+            ),
+        ).fetchall()
+
+    provinces: list[str] = []
+    weight_bands: list[str] = []
+    cells: list[ContributionHeatmapCell] = []
+
+    for row in rows:
+        province = str(row["destination_province"])
+        weight_band = str(row["weight_band"])
+        if province not in provinces:
+            provinces.append(province)
+        if weight_band not in weight_bands:
+            weight_bands.append(weight_band)
+        cells.append(
+            ContributionHeatmapCell(
+                destination_province=province,
+                weight_band=weight_band,
+                value=_as_float(row["value"]),
+                ticket_count=_as_float(row["ticket_count"]),
+                weight_total=_as_float(row["weight_total"]),
+            )
+        )
+
+    return ContributionHeatmapResponse(
+        period_month=period_month,
+        region_code=region_code,
+        scope_type=scope_type,
+        metric=metric,
+        provinces=provinces,
+        weight_bands=weight_bands,
+        cells=cells,
+    )
 
 
 def get_import_job(job_id: int) -> ImportJobResponse:

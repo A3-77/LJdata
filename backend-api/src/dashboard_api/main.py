@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .db import get_franchise_rank, get_import_job, get_overview
-from .schemas import ImportJobResponse, OverviewResponse, RankItem
+from .db import get_contribution_heatmap, get_franchise_rank, get_import_job, get_overview
+from .schemas import ContributionHeatmapResponse, ImportJobResponse, OverviewResponse, RankItem
 
 app = FastAPI(title="Liaoning Franchise Contribution Dashboard API", version="0.1.0")
 
@@ -42,6 +42,23 @@ def franchise_rank(
         metric=metric,
         direction=direction,
         limit=limit,
+    )
+
+
+@app.get("/api/dashboard/contribution-flow/heatmap", response_model=ContributionHeatmapResponse)
+def contribution_flow_heatmap(
+    period_month: str = "202604",
+    region_code: str = "LN",
+    scope_type: str = "region",
+    metric: str = "contribution_total",
+    province_limit: int = 12,
+) -> ContributionHeatmapResponse:
+    return get_contribution_heatmap(
+        period_month=period_month,
+        region_code=region_code,
+        scope_type=scope_type,
+        metric=metric,
+        province_limit=province_limit,
     )
 
 

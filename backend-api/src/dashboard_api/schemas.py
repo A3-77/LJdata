@@ -31,3 +31,21 @@ class ImportJobResponse(BaseModel):
     status: str
     progress: int
     message: str | None = None
+
+
+class ContributionHeatmapCell(BaseModel):
+    destination_province: str
+    weight_band: str
+    value: float
+    ticket_count: float | None = None
+    weight_total: float | None = None
+
+
+class ContributionHeatmapResponse(BaseModel):
+    period_month: str
+    region_code: str
+    scope_type: str
+    metric: str
+    provinces: list[str]
+    weight_bands: list[str]
+    cells: list[ContributionHeatmapCell]

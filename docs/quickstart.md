@@ -73,6 +73,7 @@ Dashboard checks:
 http://localhost:8000/api/dashboard/overview?period_month=202604&region_code=LN
 http://localhost:8000/api/dashboard/franchises/rank?period_month=202604&region_code=LN&metric=total_contribution&direction=desc&limit=10
 http://localhost:8000/api/dashboard/franchises/rank?period_month=202604&region_code=LN&metric=total_contribution&direction=asc&limit=10
+http://localhost:8000/api/dashboard/contribution-flow/heatmap?period_month=202604&region_code=LN&scope_type=region&metric=contribution_total&province_limit=12
 ```
 
 ## 4. Frontend
@@ -110,11 +111,10 @@ Implemented:
 - PostgreSQL schema and core seed data.
 - Python workbook inspection, extraction, and PostgreSQL loading CLI.
 - FastAPI dashboard endpoints backed by PostgreSQL.
-- React dashboard shell backed by API calls, with loading, error, and empty states.
+- React dashboard shell backed by API calls, with loading, error, empty states, ranking chart, and province-weight heatmap.
 - Cloudflare Worker API gateway and upload queue skeleton.
 
 Next:
 
-- Add ECharts implementations.
 - Persist source_file and import_job records.
 - Add validation report persistence.

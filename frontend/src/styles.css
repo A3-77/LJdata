@@ -267,6 +267,23 @@ h2 {
   gap: 12px;
 }
 
+.compact-list {
+  margin-top: 12px;
+}
+
+.chart {
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-rank {
+  height: 260px;
+}
+
+.chart-heatmap {
+  height: 360px;
+}
+
 .empty-panel,
 .empty-cell {
   color: var(--muted);
@@ -405,5 +422,13 @@ th {
 
   .amount {
     text-align: left;
+  }
+
+  .chart-rank {
+    height: 300px;
+  }
+
+  .chart-heatmap {
+    height: 420px;
   }
 }
