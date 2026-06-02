@@ -1,66 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchDashboardData } from "./api";
 import { HeatmapChartView, RankChart } from "./charts";
-import { DEMO_MODE, METRIC_LABELS, NAV_ITEMS, PERIOD_MONTH, STATUS_LABELS } from "./constants";
+import { DeductionBar, EmptyRows, KpiCard, RankBar, StatusPill } from "./components";
+import { DEMO_MODE, METRIC_LABELS, NAV_ITEMS, PERIOD_MONTH } from "./constants";
 import { countWan, moneyWan, percent, plainNumber, signedMoneyWan } from "./format";
 import { sumHeatmapByProvince, sumHeatmapByWeightBand } from "./heatmapUtils";
 import type { ContributionHeatmap, DashboardData, Overview, RankItem, ViewKey } from "./types";
-
-function KpiCard(props: { label: string; value: string; tone?: "good" | "risk" | "neutral"; loading?: boolean }) {
-  return (
-    <section className={`kpi ${props.tone ?? "neutral"} ${props.loading ? "loading" : ""}`}>
-      <span>{props.label}</span>
-      <strong>{props.loading ? "" : props.value}</strong>
-    </section>
-  );
-}
-
-function StatusPill({ status }: { status: string | undefined }) {
-  const normalized = status ?? "pending";
-  return <span className={`status-pill ${normalized}`}>{STATUS_LABELS[normalized] ?? normalized}</span>;
-}
-
-function RankBar({ item, max }: { item: RankItem; max: number }) {
-  const width = Math.max(4, percent(Math.abs(item.total_contribution), max));
-  const negative = item.total_contribution < 0;
-  return (
-    <div className="rank-row">
-      <div className="rank-label">
-        <strong title={item.name}>{item.name}</strong>
-        <span>{item.tags.join(" / ") || "正常"}</span>
-      </div>
-      <div className="rank-track" aria-hidden="true">
-        <div className={negative ? "rank-bar negative" : "rank-bar"} style={{ width: `${width}%` }} />
-      </div>
-      <span className={negative ? "amount negative-text" : "amount"}>{moneyWan(item.total_contribution)}</span>
-    </div>
-  );
-}
-
-function DeductionBar({ item, max }: { item: RankItem; max: number }) {
-  const deduction = item.deduction_total ?? 0;
-  const width = Math.max(4, percent(deduction, max));
-  return (
-    <div className="rank-row">
-      <div className="rank-label">
-        <strong title={item.name}>{item.name}</strong>
-        <span>{item.tags.join(" / ") || "待复核"}</span>
-      </div>
-      <div className="rank-track" aria-hidden="true">
-        <div className="rank-bar negative" style={{ width: `${width}%` }} />
-      </div>
-      <span className="amount negative-text">{moneyWan(deduction)}</span>
-    </div>
-  );
-}
-
-function EmptyRows({ colSpan }: { colSpan: number }) {
-  return (
-    <tr>
-      <td className="empty-cell" colSpan={colSpan}>暂无数据</td>
-    </tr>
-  );
-}
 
 function OverviewView({
   data,
