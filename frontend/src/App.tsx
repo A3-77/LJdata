@@ -96,7 +96,7 @@ const NAV_ITEMS: { key: ViewKey; label: string; enabled: boolean }[] = [
   { key: "overview", label: "经营总览", enabled: true },
   { key: "franchise", label: "加盟商贡献", enabled: true },
   { key: "site", label: "网点下钻", enabled: false },
-  { key: "flow", label: "目的省份与公斤段", enabled: false },
+  { key: "flow", label: "目的省份与公斤段", enabled: true },
   { key: "deduction", label: "扣款与补贴", enabled: false },
   { key: "import", label: "数据导入", enabled: true },
 ];
@@ -360,6 +360,42 @@ function signedMoneyWan(value: number | null | undefined) {
   const raw = value ?? 0;
   const sign = raw > 0 ? "+" : "";
   return `${sign}${moneyWan(raw)}`;
+}
+
+function sumHeatmapByProvince(heatmap: ContributionHeatmap | null | undefined) {
+  const totals = new Map<string, { name: string; value: number; tickets: number; weight: number }>();
+  for (const cell of heatmap?.cells ?? []) {
+    const current = totals.get(cell.destination_province) ?? {
+      name: cell.destination_province,
+      value: 0,
+      tickets: 0,
+      weight: 0,
+    };
+    current.value += cell.value;
+    current.tickets += cell.ticket_count ?? 0;
+    current.weight += cell.weight_total ?? 0;
+    totals.set(cell.destination_province, current);
+  }
+  return [...totals.values()].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+}
+
+function sumHeatmapByWeightBand(heatmap: ContributionHeatmap | null | undefined) {
+  const totals = new Map<string, { name: string; value: number; tickets: number; weight: number }>();
+  for (const cell of heatmap?.cells ?? []) {
+    const current = totals.get(cell.weight_band) ?? {
+      name: cell.weight_band,
+      value: 0,
+      tickets: 0,
+      weight: 0,
+    };
+    current.value += cell.value;
+    current.tickets += cell.ticket_count ?? 0;
+    current.weight += cell.weight_total ?? 0;
+    totals.set(cell.weight_band, current);
+  }
+  return WEIGHT_BANDS
+    .map((weightBand) => totals.get(weightBand))
+    .filter((item): item is { name: string; value: number; tickets: number; weight: number } => Boolean(item));
 }
 
 function percent(part: number, total: number) {
@@ -866,6 +902,154 @@ function FranchiseView({ data, maxContribution }: { data: DashboardData | null; 
   );
 }
 
+function FlowView({ heatmap }: { heatmap: ContributionHeatmap | null | undefined }) {
+  const provinceTotals = sumHeatmapByProvince(heatmap);
+  const weightBandTotals = sumHeatmapByWeightBand(heatmap);
+  const negativeCells = (heatmap?.cells ?? [])
+    .filter((cell) => cell.value < 0)
+    .sort((a, b) => a.value - b.value)
+    .slice(0, 8);
+  const strongestProvince = provinceTotals[0];
+  const strongestWeightBand = [...weightBandTotals].sort((a, b) => Math.abs(b.value) - Math.abs(a.value))[0];
+  const totalContribution = provinceTotals.reduce((sum, item) => sum + item.value, 0);
+
+  return (
+    <section className="flow-view">
+      <section className="kpi-grid">
+        <KpiCard label="覆盖目的省份" value={`${heatmap?.provinces.length ?? 0}`} />
+        <KpiCard label="公斤段数量" value={`${heatmap?.weight_bands.length ?? 0}`} />
+        <KpiCard label="热力图贡献合计" value={moneyWan(totalContribution)} tone={totalContribution < 0 ? "risk" : "good"} />
+        <KpiCard label="负贡献单元格" value={`${negativeCells.length}`} tone={negativeCells.length ? "risk" : "neutral"} />
+      </section>
+
+      <section className="dashboard-grid">
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>目的省份与公斤段热力图</h2>
+            <span>贡献总额 / 万元</span>
+          </div>
+          <HeatmapChartView heatmap={heatmap} />
+          <p className="panel-note">
+            横轴按业务公斤段排序，纵轴按目的省份贡献绝对值排序。绿色表示正贡献，红色表示负贡献。
+          </p>
+        </article>
+
+        <article className="panel">
+          <div className="panel-head">
+            <h2>目的省份贡献排行</h2>
+            <span>Top 12</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>目的省份</th>
+                <th>贡献</th>
+                <th>票量</th>
+              </tr>
+            </thead>
+            <tbody>
+              {provinceTotals.length ? (
+                provinceTotals.map((item) => (
+                  <tr key={item.name}>
+                    <td>{item.name}</td>
+                    <td className={item.value < 0 ? "negative-text" : ""}>{signedMoneyWan(item.value)}</td>
+                    <td>{countWan(item.tickets)}</td>
+                  </tr>
+                ))
+              ) : (
+                <EmptyRows colSpan={3} />
+              )}
+            </tbody>
+          </table>
+        </article>
+
+        <article className="panel">
+          <div className="panel-head">
+            <h2>公斤段贡献汇总</h2>
+            <span>业务排序</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>公斤段</th>
+                <th>贡献</th>
+                <th>重量</th>
+              </tr>
+            </thead>
+            <tbody>
+              {weightBandTotals.length ? (
+                weightBandTotals.map((item) => (
+                  <tr key={item.name}>
+                    <td>{item.name}</td>
+                    <td className={item.value < 0 ? "negative-text" : ""}>{signedMoneyWan(item.value)}</td>
+                    <td>{countWan(item.weight)}</td>
+                  </tr>
+                ))
+              ) : (
+                <EmptyRows colSpan={3} />
+              )}
+            </tbody>
+          </table>
+        </article>
+
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>流向关注点</h2>
+            <span>自动识别</span>
+          </div>
+          <div className="insight-grid">
+            <div>
+              <strong>{strongestProvince?.name ?? "-"}</strong>
+              <span>当前贡献绝对值最高的目的省份，贡献为 {signedMoneyWan(strongestProvince?.value)}。</span>
+            </div>
+            <div>
+              <strong>{strongestWeightBand?.name ?? "-"}</strong>
+              <span>当前贡献绝对值最高的公斤段，贡献为 {signedMoneyWan(strongestWeightBand?.value)}。</span>
+            </div>
+            <div>
+              <strong>{negativeCells.length}</strong>
+              <span>个省份 x 公斤段组合为负贡献，建议优先复核价格、成本和补贴口径。</span>
+            </div>
+          </div>
+        </article>
+
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>负贡献单元格</h2>
+            <span>按亏损额排序</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>目的省份</th>
+                <th>公斤段</th>
+                <th>贡献</th>
+                <th>票量</th>
+                <th>重量</th>
+              </tr>
+            </thead>
+            <tbody>
+              {negativeCells.length ? (
+                negativeCells.map((cell) => (
+                  <tr key={`${cell.destination_province}-${cell.weight_band}`}>
+                    <td>{cell.destination_province}</td>
+                    <td>{cell.weight_band}</td>
+                    <td className="negative-text">{signedMoneyWan(cell.value)}</td>
+                    <td>{countWan(cell.ticket_count)}</td>
+                    <td>{countWan(cell.weight_total)}</td>
+                  </tr>
+                ))
+              ) : (
+                <EmptyRows colSpan={5} />
+              )}
+            </tbody>
+          </table>
+        </article>
+      </section>
+    </section>
+  );
+}
+
 export function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -971,6 +1155,8 @@ export function App() {
         ) : null}
 
         {activeView === "franchise" ? <FranchiseView data={data} maxContribution={maxContribution} /> : null}
+
+        {activeView === "flow" ? <FlowView heatmap={data?.heatmap} /> : null}
 
         {activeView === "import" ? <ImportView data={data} /> : null}
       </section>
