@@ -5,6 +5,7 @@ import type {
   DashboardData,
   ImportErrorResponse,
   ImportJob,
+  ImportJobHistoryItem,
   ImportValidationResponse,
   Overview,
   RankItem,
@@ -51,7 +52,8 @@ export async function fetchDashboardData(): Promise<DashboardData> {
   ]);
   const importJob = await fetchImportJob();
   const jobId = importJob?.job_id ?? IMPORT_JOB_ID;
-  const [importValidation, importErrors] = await Promise.all([
+  const [importJobs, importValidation, importErrors] = await Promise.all([
+    fetchJson<ImportJobHistoryItem[]>(`/api/import/jobs?${params}&limit=8`),
     fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${jobId}/validation-results`),
     fetchOptionalJson<ImportErrorResponse>(`/api/import/jobs/${jobId}/errors`),
   ]);
@@ -62,6 +64,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     siteRank,
     heatmap,
     importJob,
+    importJobs,
     importValidation,
     importErrors,
   };

@@ -18,6 +18,7 @@ GET /api/dashboard/overview
 GET /api/dashboard/franchises/rank
 GET /api/dashboard/sites/rank
 GET /api/dashboard/contribution-flow/heatmap
+GET /api/import/jobs
 GET /api/import/jobs/latest
 GET /api/import/jobs/{job_id}
 GET /api/import/jobs/{job_id}/validation-results

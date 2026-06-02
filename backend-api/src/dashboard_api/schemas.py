@@ -46,6 +46,20 @@ class ImportJobResponse(BaseModel):
     message: str | None = None
 
 
+class ImportJobHistoryItem(BaseModel):
+    job_id: int
+    file_name: str
+    period_month: str
+    region_code: str
+    template_code: str | None = None
+    status: str
+    progress: int
+    created_at: str
+    started_at: str | None = None
+    finished_at: str | None = None
+    message: str | None = None
+
+
 class ImportValidationResult(BaseModel):
     rule_code: str
     metric_code: str

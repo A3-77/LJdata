@@ -110,6 +110,7 @@ export function OverviewView({
 
 export function ImportView({ data }: { data: DashboardData | null }) {
   const job = data?.importJob;
+  const importJobs = data?.importJobs ?? [];
   const validation = data?.importValidation;
   const errors = data?.importErrors;
   const totalRules = (validation?.passed ?? 0) + (validation?.failed ?? 0);
@@ -155,6 +156,45 @@ export function ImportView({ data }: { data: DashboardData | null }) {
           </div>
         </article>
       </section>
+
+      <article className="panel wide">
+        <div className="panel-head">
+          <h2>导入历史</h2>
+          <span>最近 {importJobs.length} 次任务</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>任务</th>
+              <th>文件</th>
+              <th>月份</th>
+              <th>区域</th>
+              <th>模板</th>
+              <th>状态</th>
+              <th>完成时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            {importJobs.length ? (
+              importJobs.map((item) => (
+                <tr key={item.job_id}>
+                  <td>#{item.job_id}</td>
+                  <td>{item.file_name}</td>
+                  <td>{item.period_month}</td>
+                  <td>{item.region_code}</td>
+                  <td>{item.template_code ?? "-"}</td>
+                  <td>
+                    <StatusPill status={item.status} />
+                  </td>
+                  <td>{item.finished_at ? new Date(item.finished_at).toLocaleString("zh-CN", { hour12: false }) : "-"}</td>
+                </tr>
+              ))
+            ) : (
+              <EmptyRows colSpan={7} />
+            )}
+          </tbody>
+        </table>
+      </article>
 
       <article className="panel wide">
         <div className="panel-head">

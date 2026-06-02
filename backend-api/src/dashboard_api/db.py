@@ -11,6 +11,7 @@ from .schemas import (
     ContributionHeatmapResponse,
     ImportErrorItem,
     ImportErrorResponse,
+    ImportJobHistoryItem,
     ImportJobResponse,
     ImportValidationResponse,
     ImportValidationResult,
@@ -356,6 +357,59 @@ def get_latest_import_job(period_month: str | None, region_code: str | None) -> 
         progress=int(row["progress"]),
         message=row["message"],
     )
+
+
+def list_import_jobs(period_month: str | None, region_code: str | None, limit: int) -> list[ImportJobHistoryItem]:
+    filters = []
+    params: list[Any] = []
+    if period_month:
+        filters.append("sf.period_month = %s")
+        params.append(period_month)
+    if region_code:
+        filters.append("sf.region_code = %s")
+        params.append(region_code)
+
+    bounded_limit = max(1, min(limit, 100))
+    params.append(bounded_limit)
+    where_clause = f"where {' and '.join(filters)}" if filters else ""
+    sql = f"""
+        select
+          ij.id as job_id,
+          sf.file_name,
+          sf.period_month,
+          sf.region_code,
+          sf.template_code,
+          ij.status,
+          ij.progress,
+          ij.created_at,
+          ij.started_at,
+          ij.finished_at,
+          ij.message
+        from import_job ij
+        join source_file sf on sf.id = ij.file_id
+        {where_clause}
+        order by coalesce(ij.started_at, ij.created_at) desc, ij.id desc
+        limit %s
+    """
+    with _connect() as conn:
+        rows = conn.execute(sql, tuple(params)).fetchall()
+
+    return [
+        ImportJobHistoryItem(
+            job_id=int(row["job_id"]),
+            file_name=str(row["file_name"]),
+            period_month=str(row["period_month"]),
+            region_code=str(row["region_code"]),
+            template_code=row["template_code"],
+            status=str(row["status"]),
+            progress=int(row["progress"]),
+            created_at=row["created_at"].isoformat(),
+            started_at=None if row["started_at"] is None else row["started_at"].isoformat(),
+            finished_at=None if row["finished_at"] is None else row["finished_at"].isoformat(),
+            message=row["message"],
+        )
+        for row in rows
+    ]
 
 
 def get_import_validation_results(job_id: int) -> ImportValidationResponse:

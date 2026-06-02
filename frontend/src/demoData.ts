@@ -257,6 +257,21 @@ export const demoData: DashboardData = {
     progress: 100,
     message: `${REGION_LABEL}区域_加盟商贡献表_${PERIOD_MONTH}（测试）.xlsx 已完成校验，演示模式未写入数据库。`,
   },
+  importJobs: [
+    {
+      job_id: 1,
+      file_name: `${REGION_LABEL}区域_加盟商贡献表_${PERIOD_MONTH}（测试）.xlsx`,
+      period_month: PERIOD_MONTH,
+      region_code: REGION_CODE,
+      template_code: "franchise_contribution_v1",
+      status: "completed",
+      progress: 100,
+      created_at: "2026-06-03T00:00:00+08:00",
+      started_at: "2026-06-03T00:00:00+08:00",
+      finished_at: "2026-06-03T00:02:00+08:00",
+      message: "演示模式导入任务",
+    },
+  ],
   importValidation: {
     job_id: 1,
     passed: 9,

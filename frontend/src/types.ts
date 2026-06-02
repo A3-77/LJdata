@@ -35,6 +35,7 @@ export type DashboardData = {
   siteRank: SiteRankItem[];
   heatmap: ContributionHeatmap;
   importJob: ImportJob | null;
+  importJobs: ImportJobHistoryItem[];
   importValidation: ImportValidationResponse | null;
   importErrors: ImportErrorResponse | null;
 };
@@ -62,6 +63,16 @@ export type ImportJob = {
   status: string;
   progress: number;
   message: string | null;
+};
+
+export type ImportJobHistoryItem = ImportJob & {
+  file_name: string;
+  period_month: string;
+  region_code: string;
+  template_code: string | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
 };
 
 export type ImportValidationResult = {

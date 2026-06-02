@@ -13,10 +13,12 @@ from .db import (
     get_latest_import_job,
     get_overview,
     get_site_rank,
+    list_import_jobs,
 )
 from .schemas import (
     ContributionHeatmapResponse,
     ImportErrorResponse,
+    ImportJobHistoryItem,
     ImportJobResponse,
     ImportValidationResponse,
     OverviewResponse,
@@ -99,6 +101,15 @@ def contribution_flow_heatmap(
 @app.get("/api/import/jobs/latest", response_model=ImportJobResponse)
 def latest_import_job(period_month: str | None = None, region_code: str | None = None) -> ImportJobResponse:
     return get_latest_import_job(period_month=period_month, region_code=region_code)
+
+
+@app.get("/api/import/jobs", response_model=list[ImportJobHistoryItem])
+def import_jobs(
+    period_month: str | None = None,
+    region_code: str | None = None,
+    limit: int = 10,
+) -> list[ImportJobHistoryItem]:
+    return list_import_jobs(period_month=period_month, region_code=region_code, limit=limit)
 
 
 @app.get("/api/import/jobs/{job_id}", response_model=ImportJobResponse)
