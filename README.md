@@ -44,3 +44,19 @@ outputs/
 3. 生成 Cloudflare Workers API 骨架。
 4. 生成 React 看板前端骨架。
 5. 用当前 202604 Excel 做导入回归测试。
+
+## 当前状态
+
+已创建 MVP 工程骨架：
+
+- `database/`：PostgreSQL 建表和种子数据。
+- `import-service/`：Python Excel 检查 CLI。
+- `backend-api/`：FastAPI 查询接口骨架。
+- `frontend/`：React/Vite 看板骨架。
+- `cloudflare/`：Workers、R2、Queues 入口骨架。
+
+启动说明见：
+
+```text
+docs/quickstart.md
+```

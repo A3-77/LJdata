@@ -1,0 +1,16 @@
+name = "liaoning-dashboard-api"
+main = "src/index.ts"
+compatibility_date = "2026-06-02"
+
+[[r2_buckets]]
+binding = "SOURCE_FILES"
+bucket_name = "dashboard-source-files"
+
+[[queues.producers]]
+binding = "IMPORT_QUEUE"
+queue = "dashboard-import-jobs"
+
+[vars]
+REGION_CODE = "LN"
+BACKEND_API_BASE_URL = "http://localhost:8000"
+
