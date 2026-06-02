@@ -56,3 +56,52 @@ class WorkbookInspection:
             "overview": self.overview.as_dict(),
         }
 
+
+@dataclass(frozen=True)
+class FranchiseMonthRow:
+    period_month: str
+    franchise_name: str
+    daily_over_5000_flag: bool | None
+    outbound_tickets: float | None
+    outbound_weight: float | None
+    outbound_avg_weight: float | None
+    waybill_fee: float | None
+    transfer_fee: float | None
+    warehouse_fee: float | None
+    operation_fee: float | None
+    dispatch_fee: float | None
+    one_price_rebate: float | None
+    outbound_contribution: float | None
+    outbound_unit_contribution: float | None
+    outbound_kg_contribution: float | None
+    inbound_signed_tickets: float | None
+    inbound_weight: float | None
+    inbound_dispatch_income: float | None
+    inbound_dispatch_cost: float | None
+    deduction_total: float | None
+    inbound_contribution: float | None
+    total_contribution: float | None
+    outbound_pass_contribution: float | None
+    inbound_pass_contribution: float | None
+
+    def as_dict(self) -> dict[str, Any]:
+        return self.__dict__
+
+
+@dataclass(frozen=True)
+class SiteMonthRow:
+    period_month: str
+    franchise_name: str
+    site_name: str
+    site_status: str | None
+    daily_over_5000_flag: bool | None
+    outbound_tickets: float | None
+    outbound_weight: float | None
+    outbound_contribution: float | None
+    inbound_signed_tickets: float | None
+    inbound_contribution: float | None
+    deduction_total: float | None
+    total_contribution: float | None
+
+    def as_dict(self) -> dict[str, Any]:
+        return self.__dict__
