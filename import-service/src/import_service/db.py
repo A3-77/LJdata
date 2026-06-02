@@ -135,14 +135,15 @@ def create_import_job(
                 cursor.execute(
                     """
                     insert into source_sheet (
-                      file_id, sheet_name, max_row, max_col,
+                      file_id, sheet_name, standard_sheet_code, max_row, max_col,
                       header_start_row, header_end_row, data_start_row, total_row
                     )
-                    values (%s, %s, %s, %s, %s, %s, %s, %s)
+                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         file_id,
                         sheet.name,
+                        sheet.standard_sheet_code,
                         sheet.max_row,
                         sheet.max_col,
                         sheet.header_start_row,

@@ -9,6 +9,7 @@ class SheetProfile:
     name: str
     max_row: int
     max_col: int
+    standard_sheet_code: str | None = None
     header_start_row: int | None = None
     header_end_row: int | None = None
     data_start_row: int | None = None

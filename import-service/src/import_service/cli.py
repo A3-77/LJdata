@@ -29,10 +29,12 @@ def main() -> None:
 
     inspect_parser = subparsers.add_parser("inspect", help="Inspect workbook structure and overview checks")
     inspect_parser.add_argument("xlsx", type=Path)
+    inspect_parser.add_argument("--template-code", default="franchise_contribution_v1")
 
     validate_parser = subparsers.add_parser("validate", help="Validate workbook totals and supported reconciliation rules")
     validate_parser.add_argument("xlsx", type=Path)
     validate_parser.add_argument("--tolerance", type=float, default=0.01)
+    validate_parser.add_argument("--template-code", default="franchise_contribution_v1")
 
     extract_parser = subparsers.add_parser("extract", help="Extract normalized rows from workbook")
     extract_subparsers = extract_parser.add_subparsers(dest="extract_command", required=True)
@@ -41,11 +43,13 @@ def main() -> None:
     franchise_parser.add_argument("xlsx", type=Path)
     franchise_parser.add_argument("--limit", type=int, default=5)
     franchise_parser.add_argument("--all", action="store_true", help="Print all rows")
+    franchise_parser.add_argument("--template-code", default="franchise_contribution_v1")
 
     site_parser = extract_subparsers.add_parser("site-summary", help="Extract 总表-网点 rows")
     site_parser.add_argument("xlsx", type=Path)
     site_parser.add_argument("--limit", type=int, default=5)
     site_parser.add_argument("--all", action="store_true", help="Print all rows")
+    site_parser.add_argument("--template-code", default="franchise_contribution_v1")
 
     flow_parser = extract_subparsers.add_parser("contribution-flow", help="Unpivot 辽宁区域贡献 or 加盟商贡献 rows")
     flow_parser.add_argument("xlsx", type=Path)
@@ -53,6 +57,7 @@ def main() -> None:
     flow_parser.add_argument("--limit", type=int, default=5)
     flow_parser.add_argument("--all", action="store_true", help="Print all rows")
     flow_parser.add_argument("--include-total-rows", action="store_true")
+    flow_parser.add_argument("--template-code", default="franchise_contribution_v1")
 
     load_parser = subparsers.add_parser("load-summary", help="Load franchise and site summaries into PostgreSQL")
     load_parser.add_argument("xlsx", type=Path)
@@ -81,12 +86,12 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "inspect":
-        result = inspect_workbook(args.xlsx)
+        result = inspect_workbook(args.xlsx, template_code=args.template_code)
         print(json.dumps(result.as_dict(), ensure_ascii=False, indent=2))
         return
 
     if args.command == "validate":
-        results = validate_workbook(args.xlsx, tolerance=args.tolerance)
+        results = validate_workbook(args.xlsx, tolerance=args.tolerance, template_code=args.template_code)
         passed = sum(1 for result in results if result.passed)
         print(
             json.dumps(
@@ -102,13 +107,13 @@ def main() -> None:
         return
 
     if args.command == "extract" and args.extract_command == "franchise-summary":
-        rows = parse_franchise_month_rows(args.xlsx)
+        rows = parse_franchise_month_rows(args.xlsx, template_code=args.template_code)
         selected = rows if args.all else rows[: args.limit]
         print(json.dumps({"count": len(rows), "rows": [row.as_dict() for row in selected]}, ensure_ascii=False, indent=2))
         return
 
     if args.command == "extract" and args.extract_command == "site-summary":
-        rows = parse_site_month_rows(args.xlsx)
+        rows = parse_site_month_rows(args.xlsx, template_code=args.template_code)
         selected = rows if args.all else rows[: args.limit]
         print(json.dumps({"count": len(rows), "rows": [row.as_dict() for row in selected]}, ensure_ascii=False, indent=2))
         return
@@ -118,16 +123,17 @@ def main() -> None:
             args.xlsx,
             scope_type=args.scope,
             include_total_rows=args.include_total_rows,
+            template_code=args.template_code,
         )
         selected = rows if args.all else rows[: args.limit]
         print(json.dumps({"count": len(rows), "rows": [row.as_dict() for row in selected]}, ensure_ascii=False, indent=2))
         return
 
     if args.command == "load-summary":
-        franchise_rows = parse_franchise_month_rows(args.xlsx)
-        site_rows = parse_site_month_rows(args.xlsx)
+        franchise_rows = parse_franchise_month_rows(args.xlsx, template_code=args.template_code)
+        site_rows = parse_site_month_rows(args.xlsx, template_code=args.template_code)
         period_month = franchise_rows[0].period_month if franchise_rows else ""
-        inspection = inspect_workbook(args.xlsx)
+        inspection = inspect_workbook(args.xlsx, template_code=args.template_code)
         validation_results = validate_summary_totals(inspection.overview, franchise_rows, site_rows)
         file_id, job_id = create_import_job(
             args.database_url,
@@ -191,12 +197,22 @@ def main() -> None:
         return
 
     if args.command == "load-workbook":
-        franchise_rows = parse_franchise_month_rows(args.xlsx)
-        site_rows = parse_site_month_rows(args.xlsx)
-        region_flow_rows = parse_contribution_flow_rows(args.xlsx, scope_type="region", region_code=args.region_code)
-        franchise_flow_rows = parse_contribution_flow_rows(args.xlsx, scope_type="franchise", region_code=args.region_code)
+        franchise_rows = parse_franchise_month_rows(args.xlsx, template_code=args.template_code)
+        site_rows = parse_site_month_rows(args.xlsx, template_code=args.template_code)
+        region_flow_rows = parse_contribution_flow_rows(
+            args.xlsx,
+            scope_type="region",
+            region_code=args.region_code,
+            template_code=args.template_code,
+        )
+        franchise_flow_rows = parse_contribution_flow_rows(
+            args.xlsx,
+            scope_type="franchise",
+            region_code=args.region_code,
+            template_code=args.template_code,
+        )
         period_month = franchise_rows[0].period_month if franchise_rows else ""
-        inspection = inspect_workbook(args.xlsx)
+        inspection = inspect_workbook(args.xlsx, template_code=args.template_code)
         validation_results = validate_summary_totals(inspection.overview, franchise_rows, site_rows)
         file_id, job_id = create_import_job(
             args.database_url,
@@ -281,9 +297,14 @@ def main() -> None:
         return
 
     if args.command == "load-contribution-flow":
-        rows = parse_contribution_flow_rows(args.xlsx, scope_type=args.scope, region_code=args.region_code)
+        rows = parse_contribution_flow_rows(
+            args.xlsx,
+            scope_type=args.scope,
+            region_code=args.region_code,
+            template_code=args.template_code,
+        )
         period_month = rows[0].period_month if rows else ""
-        inspection = inspect_workbook(args.xlsx)
+        inspection = inspect_workbook(args.xlsx, template_code=args.template_code)
         file_id, job_id = create_import_job(
             args.database_url,
             workbook_path=args.xlsx,

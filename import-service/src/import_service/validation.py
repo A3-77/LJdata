@@ -70,8 +70,13 @@ def validate_summary_totals(
     ]
 
 
-def validate_workbook(path: str, *, tolerance: float = 0.01) -> list[ValidationResult]:
-    inspection = inspect_workbook(path)
-    franchise_rows = parse_franchise_month_rows(path)
-    site_rows = parse_site_month_rows(path)
+def validate_workbook(
+    path: str,
+    *,
+    tolerance: float = 0.01,
+    template_code: str = "franchise_contribution_v1",
+) -> list[ValidationResult]:
+    inspection = inspect_workbook(path, template_code=template_code)
+    franchise_rows = parse_franchise_month_rows(path, template_code=template_code)
+    site_rows = parse_site_month_rows(path, template_code=template_code)
     return validate_summary_totals(inspection.overview, franchise_rows, site_rows, tolerance=tolerance)
