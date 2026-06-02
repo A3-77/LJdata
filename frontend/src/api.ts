@@ -27,6 +27,15 @@ async function fetchOptionalJson<T>(path: string): Promise<T | null> {
   }
 }
 
+async function fetchImportJob(): Promise<ImportJob | null> {
+  const params = `period_month=${PERIOD_MONTH}&region_code=${REGION_CODE}`;
+  const latestJob = await fetchOptionalJson<ImportJob>(`/api/import/jobs/latest?${params}`);
+  if (latestJob) {
+    return latestJob;
+  }
+  return fetchOptionalJson<ImportJob>(`/api/import/jobs/${IMPORT_JOB_ID}`);
+}
+
 export async function fetchDashboardData(): Promise<DashboardData> {
   if (DEMO_MODE) {
     return demoData;
@@ -40,10 +49,11 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     fetchJson<SiteRankItem[]>(`/api/dashboard/sites/rank?${params}&metric=total_contribution&direction=desc&limit=12`),
     fetchJson<ContributionHeatmap>(`/api/dashboard/contribution-flow/heatmap?${params}&scope_type=region&metric=contribution_total&province_limit=12`),
   ]);
-  const [importJob, importValidation, importErrors] = await Promise.all([
-    fetchOptionalJson<ImportJob>(`/api/import/jobs/${IMPORT_JOB_ID}`),
-    fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${IMPORT_JOB_ID}/validation-results`),
-    fetchOptionalJson<ImportErrorResponse>(`/api/import/jobs/${IMPORT_JOB_ID}/errors`),
+  const importJob = await fetchImportJob();
+  const jobId = importJob?.job_id ?? IMPORT_JOB_ID;
+  const [importValidation, importErrors] = await Promise.all([
+    fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${jobId}/validation-results`),
+    fetchOptionalJson<ImportErrorResponse>(`/api/import/jobs/${jobId}/errors`),
   ]);
   return {
     overview: overviewData,

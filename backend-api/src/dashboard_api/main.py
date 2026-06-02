@@ -10,6 +10,7 @@ from .db import (
     get_import_errors,
     get_import_job,
     get_import_validation_results,
+    get_latest_import_job,
     get_overview,
     get_site_rank,
 )
@@ -93,6 +94,11 @@ def contribution_flow_heatmap(
         metric=metric,
         province_limit=province_limit,
     )
+
+
+@app.get("/api/import/jobs/latest", response_model=ImportJobResponse)
+def latest_import_job(period_month: str | None = None, region_code: str | None = None) -> ImportJobResponse:
+    return get_latest_import_job(period_month=period_month, region_code=region_code)
 
 
 @app.get("/api/import/jobs/{job_id}", response_model=ImportJobResponse)
