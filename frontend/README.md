@@ -26,3 +26,17 @@ npm run dev
 ```
 
 Demo mode keeps the API path unchanged by default. It uses verified 202604 overview totals plus sample ranking and heatmap rows, and the page is explicitly marked as demo data.
+
+## Cloudflare Pages
+
+Use these settings for a Pages deployment:
+
+```text
+Root directory: frontend
+Build command: npm run build
+Build output directory: dist
+```
+
+Set `VITE_API_BASE_URL` to the Worker origin when Pages is not routing `/api/*` to the Worker. Leave it empty when `/api/*` is routed on the same host.
+
+`public/_redirects` keeps the React app working when a user refreshes a nested route.

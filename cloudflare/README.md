@@ -14,6 +14,23 @@ Workflows: optional long-running state orchestration
 
 Excel parsing stays in the Python Import Service.
 
+## Pages
+
+Cloudflare Pages hosts the Vite frontend:
+
+```text
+Root directory: frontend
+Build command: npm run build
+Build output directory: dist
+```
+
+For production API access, either:
+
+- route `/api/*` from Pages to the Worker on the same host and leave `VITE_API_BASE_URL` empty; or
+- set `VITE_API_BASE_URL` to the Worker origin.
+
+The frontend includes `public/_redirects` so SPA refreshes fall back to `index.html`.
+
 ## Worker
 
 ```powershell

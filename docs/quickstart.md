@@ -122,6 +122,16 @@ npm install
 npm run dev
 ```
 
+Cloudflare Pages frontend deployment:
+
+```text
+Root directory: frontend
+Build command: npm run build
+Build output directory: dist
+```
+
+Set Pages environment variables from `frontend/.env.example`. In production, keep `VITE_DEMO_MODE=false`. Set `VITE_API_BASE_URL` only when the frontend calls a separate Worker origin; leave it empty when `/api/*` is routed to the Worker on the same host.
+
 ## 6. Current MVP State
 
 Implemented:
