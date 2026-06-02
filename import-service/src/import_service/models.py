@@ -130,3 +130,19 @@ class ContributionFlowRow:
 
     def as_dict(self) -> dict[str, Any]:
         return self.__dict__
+
+
+@dataclass(frozen=True)
+class ValidationResult:
+    rule_code: str
+    metric_code: str
+    expected_value: float | None
+    actual_value: float | None
+    diff_value: float | None
+    tolerance: float
+    passed: bool
+    severity: str
+    message: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return self.__dict__

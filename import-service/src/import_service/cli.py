@@ -12,7 +12,9 @@ from .db import (
     load_contribution_flow_rows,
     load_franchise_month_rows,
     load_site_month_rows,
+    save_validation_results,
 )
+from .validation import validate_summary_totals, validate_workbook
 from .workbook import inspect_workbook, parse_contribution_flow_rows, parse_franchise_month_rows, parse_site_month_rows
 
 
@@ -27,6 +29,10 @@ def main() -> None:
 
     inspect_parser = subparsers.add_parser("inspect", help="Inspect workbook structure and overview checks")
     inspect_parser.add_argument("xlsx", type=Path)
+
+    validate_parser = subparsers.add_parser("validate", help="Validate workbook totals and supported reconciliation rules")
+    validate_parser.add_argument("xlsx", type=Path)
+    validate_parser.add_argument("--tolerance", type=float, default=0.01)
 
     extract_parser = subparsers.add_parser("extract", help="Extract normalized rows from workbook")
     extract_subparsers = extract_parser.add_subparsers(dest="extract_command", required=True)
@@ -79,6 +85,22 @@ def main() -> None:
         print(json.dumps(result.as_dict(), ensure_ascii=False, indent=2))
         return
 
+    if args.command == "validate":
+        results = validate_workbook(args.xlsx, tolerance=args.tolerance)
+        passed = sum(1 for result in results if result.passed)
+        print(
+            json.dumps(
+                {
+                    "passed": passed,
+                    "failed": len(results) - passed,
+                    "results": [result.as_dict() for result in results],
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return
+
     if args.command == "extract" and args.extract_command == "franchise-summary":
         rows = parse_franchise_month_rows(args.xlsx)
         selected = rows if args.all else rows[: args.limit]
@@ -106,6 +128,7 @@ def main() -> None:
         site_rows = parse_site_month_rows(args.xlsx)
         period_month = franchise_rows[0].period_month if franchise_rows else ""
         inspection = inspect_workbook(args.xlsx)
+        validation_results = validate_summary_totals(inspection.overview, franchise_rows, site_rows)
         file_id, job_id = create_import_job(
             args.database_url,
             workbook_path=args.xlsx,
@@ -131,6 +154,7 @@ def main() -> None:
                 replace_period=args.replace_period,
                 file_id=file_id,
             )
+            save_validation_results(args.database_url, job_id=job_id, results=validation_results)
         except Exception as exc:
             finish_import_job(
                 args.database_url,
@@ -149,9 +173,17 @@ def main() -> None:
             progress=100,
             message=f"Loaded {len(franchise_rows)} franchise rows and {len(site_rows)} site rows",
         )
+        passed = sum(1 for result in validation_results if result.passed)
         print(
             json.dumps(
-                {"file_id": file_id, "job_id": job_id, "franchise_rows": franchise_count, "site_rows": site_count},
+                {
+                    "file_id": file_id,
+                    "job_id": job_id,
+                    "franchise_rows": franchise_count,
+                    "site_rows": site_count,
+                    "validation_passed": passed,
+                    "validation_failed": len(validation_results) - passed,
+                },
                 ensure_ascii=False,
                 indent=2,
             )
@@ -165,6 +197,7 @@ def main() -> None:
         franchise_flow_rows = parse_contribution_flow_rows(args.xlsx, scope_type="franchise", region_code=args.region_code)
         period_month = franchise_rows[0].period_month if franchise_rows else ""
         inspection = inspect_workbook(args.xlsx)
+        validation_results = validate_summary_totals(inspection.overview, franchise_rows, site_rows)
         file_id, job_id = create_import_job(
             args.database_url,
             workbook_path=args.xlsx,
@@ -206,6 +239,7 @@ def main() -> None:
                 replace_period=args.replace_period,
                 file_id=file_id,
             )
+            save_validation_results(args.database_url, job_id=job_id, results=validation_results)
         except Exception as exc:
             finish_import_job(
                 args.database_url,
@@ -227,6 +261,7 @@ def main() -> None:
                 f"{region_flow_count} region flow rows, and {franchise_flow_count} franchise flow rows"
             ),
         )
+        passed = sum(1 for result in validation_results if result.passed)
         print(
             json.dumps(
                 {
@@ -236,6 +271,8 @@ def main() -> None:
                     "site_rows": site_count,
                     "region_contribution_flow_rows": region_flow_count,
                     "franchise_contribution_flow_rows": franchise_flow_count,
+                    "validation_passed": passed,
+                    "validation_failed": len(validation_results) - passed,
                 },
                 ensure_ascii=False,
                 indent=2,

@@ -4,7 +4,7 @@ import hashlib
 from collections.abc import Iterable
 from pathlib import Path
 
-from .models import ContributionFlowRow, FranchiseMonthRow, SiteMonthRow, WorkbookInspection
+from .models import ContributionFlowRow, FranchiseMonthRow, SiteMonthRow, ValidationResult, WorkbookInspection
 
 WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7", "8", "9", "10.3", "＞10.3"]
 
@@ -197,6 +197,38 @@ def finish_import_job(
                 (status, file_id),
             )
         conn.commit()
+
+
+def save_validation_results(database_url: str, *, job_id: int, results: Iterable[ValidationResult]) -> int:
+    psycopg = _require_psycopg()
+    results = list(results)
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("delete from import_validation_result where job_id = %s", (job_id,))
+            for result in results:
+                cursor.execute(
+                    """
+                    insert into import_validation_result (
+                      job_id, rule_code, metric_code, expected_value, actual_value,
+                      diff_value, tolerance, passed, severity, message
+                    )
+                    values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        job_id,
+                        result.rule_code,
+                        result.metric_code,
+                        result.expected_value,
+                        result.actual_value,
+                        result.diff_value,
+                        result.tolerance,
+                        result.passed,
+                        result.severity,
+                        result.message,
+                    ),
+                )
+        conn.commit()
+    return len(results)
 
 
 def load_franchise_month_rows(

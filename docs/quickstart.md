@@ -33,13 +33,19 @@ $env:PYTHONPATH = "import-service/src"
 .\.venv\Scripts\python.exe -m import_service.cli inspect "C:\Users\A377\Desktop\辽宁区域_加盟商贡献表_202604（测试）.xlsx"
 ```
 
+Validate workbook totals before loading:
+
+```powershell
+.\.venv\Scripts\python.exe -m import_service.cli validate "C:\Users\A377\Desktop\辽宁区域_加盟商贡献表_202604（测试）.xlsx"
+```
+
 Load the current workbook into PostgreSQL:
 
 ```powershell
 .\.venv\Scripts\python.exe -m import_service.cli load-workbook "C:\Users\A377\Desktop\辽宁区域_加盟商贡献表_202604（测试）.xlsx" --database-url $env:DATABASE_URL --replace-period
 ```
 
-`load-workbook` creates or updates `source_file`, records one `import_job`, refreshes `source_sheet`, and loads all currently supported fact tables.
+`load-workbook` creates or updates `source_file`, records one `import_job`, refreshes `source_sheet`, stores validation results in `import_validation_result`, and loads all currently supported fact tables.
 
 Expected row counts for the 202604 test file:
 
@@ -109,11 +115,12 @@ npm run dev
 Implemented:
 
 - PostgreSQL schema and core seed data.
-- Python workbook inspection, extraction, source file tracking, import job tracking, and PostgreSQL loading CLI.
+- Python workbook inspection, extraction, source file tracking, import job tracking, validation reporting, and PostgreSQL loading CLI.
 - FastAPI dashboard endpoints backed by PostgreSQL.
 - React dashboard shell backed by API calls, with loading, error, empty states, ranking chart, and province-weight heatmap.
 - Cloudflare Worker API gateway and upload queue skeleton.
 
 Next:
 
-- Add validation report persistence.
+- Add import error row-level persistence.
+- Wire Cloudflare Worker upload tasks to `load-workbook`.

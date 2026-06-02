@@ -34,6 +34,21 @@ create table if not exists import_error (
   created_at timestamptz not null default now()
 );
 
+create table if not exists import_validation_result (
+  id bigserial primary key,
+  job_id bigint references import_job(id),
+  rule_code text not null,
+  metric_code text not null,
+  expected_value numeric,
+  actual_value numeric,
+  diff_value numeric,
+  tolerance numeric,
+  passed boolean not null,
+  severity text not null,
+  message text,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists source_sheet (
   id bigserial primary key,
   file_id bigint not null references source_file(id),
@@ -315,4 +330,3 @@ create table if not exists tag_assignment (
   assigned_at timestamptz not null default now(),
   unique(target_type, target_id, period_month, tag_code)
 );
-

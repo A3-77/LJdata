@@ -17,6 +17,12 @@ python -m import_service.cli extract contribution-flow "C:\path\to\file.xlsx" --
 python -m import_service.cli extract contribution-flow "C:\path\to\file.xlsx" --scope franchise --limit 5
 ```
 
+Validate workbook totals:
+
+```powershell
+python -m import_service.cli validate "C:\path\to\file.xlsx"
+```
+
 Load summary rows into PostgreSQL:
 
 ```powershell
@@ -26,7 +32,7 @@ python -m import_service.cli load-contribution-flow "C:\path\to\file.xlsx" --dat
 python -m import_service.cli load-contribution-flow "C:\path\to\file.xlsx" --database-url $env:DATABASE_URL --scope franchise --replace-period
 ```
 
-Use `load-workbook` for normal imports. It creates `source_file`, records one `import_job`, refreshes `source_sheet`, and assigns `file_id` to loaded facts.
+Use `load-workbook` for normal imports. It creates `source_file`, records one `import_job`, refreshes `source_sheet`, writes `import_validation_result`, and assigns `file_id` to loaded facts.
 
 Current scope:
 
@@ -39,8 +45,9 @@ Current scope:
 - Load summary rows into PostgreSQL when dependencies and database are available.
 - Load contribution flow rows into PostgreSQL when dependencies and database are available.
 - Persist `source_file`, `source_sheet`, and `import_job` for supported workbook imports.
+- Generate summary total validation reports.
 - Prepare for full PostgreSQL import.
 
 Next scope:
 
-- Generate validation reports.
+- Persist row-level import errors.
