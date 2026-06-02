@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from .models import FranchiseMonthRow, SiteMonthRow
+from .models import ContributionFlowRow, FranchiseMonthRow, SiteMonthRow
+
+WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7", "8", "9", "10.3", "＞10.3"]
 
 
 def _require_psycopg():
@@ -69,6 +71,20 @@ def upsert_site(cursor, site_name: str, franchise_id: int, status: str | None) -
     return int(cursor.fetchone()[0])
 
 
+def ensure_weight_bands(cursor) -> None:
+    for index, weight_band in enumerate(WEIGHT_BANDS, start=1):
+        cursor.execute(
+            """
+            insert into dim_weight_band(weight_band, sort_order, display_name)
+            values (%s, %s, %s)
+            on conflict (weight_band) do update
+            set sort_order = excluded.sort_order,
+                display_name = excluded.display_name
+            """,
+            (weight_band, index, weight_band),
+        )
+
+
 def load_franchise_month_rows(
     database_url: str,
     rows: Iterable[FranchiseMonthRow],
@@ -87,6 +103,7 @@ def load_franchise_month_rows(
         with conn.cursor() as cursor:
             ensure_region(cursor, region_code, region_name)
             ensure_month(cursor, period_month)
+            ensure_weight_bands(cursor)
 
             if replace_period:
                 cursor.execute(
@@ -170,6 +187,7 @@ def load_site_month_rows(
         with conn.cursor() as cursor:
             ensure_region(cursor, region_code, region_name)
             ensure_month(cursor, period_month)
+            ensure_weight_bands(cursor)
 
             if replace_period:
                 cursor.execute(
@@ -213,6 +231,82 @@ def load_site_month_rows(
                         row.inbound_contribution,
                         row.deduction_total,
                         row.total_contribution,
+                    ),
+                )
+        conn.commit()
+    return len(rows)
+
+
+def load_contribution_flow_rows(
+    database_url: str,
+    rows: Iterable[ContributionFlowRow],
+    *,
+    region_code: str = "LN",
+    region_name: str = "辽宁区域",
+    replace_period: bool = False,
+) -> int:
+    psycopg = _require_psycopg()
+    rows = list(rows)
+    if not rows:
+        return 0
+
+    period_month = rows[0].period_month
+    scope_type = rows[0].scope_type
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cursor:
+            ensure_region(cursor, region_code, region_name)
+            ensure_month(cursor, period_month)
+            ensure_weight_bands(cursor)
+
+            if replace_period:
+                cursor.execute(
+                    "delete from fact_contribution_flow where period_month = %s and scope_type = %s",
+                    (period_month, scope_type),
+                )
+
+            for row in rows:
+                franchise_id = None
+                if row.scope_type == "franchise" and row.franchise_name:
+                    franchise_id = upsert_franchise(cursor, row.franchise_name, region_code)
+
+                cursor.execute(
+                    """
+                    insert into fact_contribution_flow (
+                      period_month, scope_type, region_code, franchise_id, franchise_name,
+                      destination_province, weight_band, ticket_count, ticket_share,
+                      weight_total, four_fee_total, settlement_price, dispatch_fee,
+                      contribution_total, unit_four_fee, unit_settlement_price,
+                      unit_dispatch_fee, unit_contribution, kg_contribution
+                    )
+                    values (
+                      %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s,
+                      %s, %s, %s, %s,
+                      %s, %s, %s,
+                      %s, %s, %s
+                    )
+                    """,
+                    (
+                        row.period_month,
+                        row.scope_type,
+                        row.region_code or region_code,
+                        franchise_id,
+                        row.franchise_name,
+                        row.destination_province,
+                        row.weight_band,
+                        row.ticket_count,
+                        row.ticket_share,
+                        row.weight_total,
+                        row.four_fee_total,
+                        row.settlement_price,
+                        row.dispatch_fee,
+                        row.contribution_total,
+                        row.unit_four_fee,
+                        row.unit_settlement_price,
+                        row.unit_dispatch_fee,
+                        row.unit_contribution,
+                        row.kg_contribution,
                     ),
                 )
         conn.commit()

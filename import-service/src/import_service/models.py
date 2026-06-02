@@ -105,3 +105,28 @@ class SiteMonthRow:
 
     def as_dict(self) -> dict[str, Any]:
         return self.__dict__
+
+
+@dataclass(frozen=True)
+class ContributionFlowRow:
+    period_month: str
+    scope_type: str
+    region_code: str | None
+    franchise_name: str | None
+    destination_province: str
+    weight_band: str
+    ticket_count: float | None
+    ticket_share: float | None
+    weight_total: float | None
+    four_fee_total: float | None
+    settlement_price: float | None
+    dispatch_fee: float | None
+    contribution_total: float | None
+    unit_four_fee: float | None
+    unit_settlement_price: float | None
+    unit_dispatch_fee: float | None
+    unit_contribution: float | None
+    kg_contribution: float | None
+
+    def as_dict(self) -> dict[str, Any]:
+        return self.__dict__
