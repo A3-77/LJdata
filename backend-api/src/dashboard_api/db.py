@@ -14,6 +14,7 @@ from .schemas import (
     ImportValidationResult,
     OverviewResponse,
     RankItem,
+    SiteRankItem,
 )
 
 RANK_METRICS = {
@@ -22,6 +23,15 @@ RANK_METRICS = {
     "inbound_contribution": "inbound_contribution",
     "deduction_total": "deduction_total",
     "outbound_tickets": "outbound_tickets",
+}
+
+SITE_RANK_METRICS = {
+    "total_contribution": "total_contribution",
+    "outbound_contribution": "outbound_contribution",
+    "inbound_contribution": "inbound_contribution",
+    "deduction_total": "deduction_total",
+    "outbound_tickets": "outbound_tickets",
+    "inbound_signed_tickets": "inbound_signed_tickets",
 }
 
 FLOW_METRICS = {
@@ -137,6 +147,57 @@ def get_franchise_rank(period_month: str, region_code: str, metric: str, directi
             outbound_contribution=_as_float(row["outbound_contribution"]),
             inbound_contribution=_as_float(row["inbound_contribution"]),
             deduction_total=_as_float(row["deduction_total"]),
+            tags=list(row["tags"] or []),
+        )
+        for row in rows
+    ]
+
+
+def get_site_rank(period_month: str, region_code: str, metric: str, direction: str, limit: int) -> list[SiteRankItem]:
+    order_column = SITE_RANK_METRICS.get(metric)
+    if order_column is None:
+        raise HTTPException(status_code=400, detail=f"unsupported metric: {metric}")
+    if direction not in {"asc", "desc"}:
+        raise HTTPException(status_code=400, detail=f"unsupported direction: {direction}")
+
+    bounded_limit = max(1, min(limit, 100))
+    sql = f"""
+        select
+          site_name as name,
+          franchise_name,
+          site_status,
+          total_contribution,
+          outbound_contribution,
+          inbound_contribution,
+          deduction_total,
+          outbound_tickets,
+          inbound_signed_tickets,
+          array_remove(array[
+            case when total_contribution < 0 then '负贡献' end,
+            case when inbound_contribution < 0 then '进港亏损' end,
+            case when deduction_total >= 20000 then '扣款关注' end,
+            case when outbound_tickets >= 5000 then '高票量' end,
+            case when site_status is not null and site_status <> '' then site_status end
+          ]::text[], null::text) as tags
+        from fact_site_month
+        where period_month = %s and region_code = %s
+        order by {order_column} {direction} nulls last
+        limit %s
+    """
+    with _connect() as conn:
+        rows = conn.execute(sql, (period_month, region_code, bounded_limit)).fetchall()
+
+    return [
+        SiteRankItem(
+            name=str(row["name"]),
+            franchise_name=str(row["franchise_name"]),
+            site_status=row["site_status"],
+            total_contribution=_as_float(row["total_contribution"]),
+            outbound_contribution=_as_float(row["outbound_contribution"]),
+            inbound_contribution=_as_float(row["inbound_contribution"]),
+            deduction_total=_as_float(row["deduction_total"]),
+            outbound_tickets=_as_float(row["outbound_tickets"]),
+            inbound_signed_tickets=_as_float(row["inbound_signed_tickets"]),
             tags=list(row["tags"] or []),
         )
         for row in rows

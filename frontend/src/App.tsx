@@ -31,10 +31,18 @@ type RankItem = {
   tags: string[];
 };
 
+type SiteRankItem = RankItem & {
+  franchise_name: string;
+  site_status: string | null;
+  outbound_tickets: number | null;
+  inbound_signed_tickets: number | null;
+};
+
 type DashboardData = {
   overview: Overview;
   topRank: RankItem[];
   bottomRank: RankItem[];
+  siteRank: SiteRankItem[];
   heatmap: ContributionHeatmap;
   importJob: ImportJob | null;
   importValidation: ImportValidationResponse | null;
@@ -95,7 +103,7 @@ const WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7", "8", 
 const NAV_ITEMS: { key: ViewKey; label: string; enabled: boolean }[] = [
   { key: "overview", label: "经营总览", enabled: true },
   { key: "franchise", label: "加盟商贡献", enabled: true },
-  { key: "site", label: "网点下钻", enabled: false },
+  { key: "site", label: "网点下钻", enabled: true },
   { key: "flow", label: "目的省份与公斤段", enabled: true },
   { key: "deduction", label: "扣款与补贴", enabled: true },
   { key: "import", label: "数据导入", enabled: true },
@@ -261,6 +269,104 @@ const demoData: DashboardData = {
       tags: ["进港亏损"],
     },
   ],
+  siteRank: [
+    {
+      name: "沈阳浑南一部",
+      franchise_name: "沈阳加盟商一百三十一(项目)",
+      site_status: "正常",
+      total_contribution: 1432500.48,
+      outbound_contribution: 1380200.18,
+      inbound_contribution: 52300.3,
+      deduction_total: 18500,
+      outbound_tickets: 186420,
+      inbound_signed_tickets: 328650,
+      tags: ["高票量", "正贡献"],
+    },
+    {
+      name: "沈阳铁西三部",
+      franchise_name: "沈阳加盟商一百三十一(项目)",
+      site_status: "正常",
+      total_contribution: 1186030.22,
+      outbound_contribution: 1112680.22,
+      inbound_contribution: 73350,
+      deduction_total: 22600,
+      outbound_tickets: 153280,
+      inbound_signed_tickets: 280440,
+      tags: ["高票量", "扣款关注"],
+    },
+    {
+      name: "盘锦兴隆台一部",
+      franchise_name: "盘锦加盟商八(周东旭)",
+      site_status: "正常",
+      total_contribution: 965420.15,
+      outbound_contribution: 882100.15,
+      inbound_contribution: 83320,
+      deduction_total: 41600,
+      outbound_tickets: 121900,
+      inbound_signed_tickets: 198300,
+      tags: ["扣款关注"],
+    },
+    {
+      name: "大连金州二部",
+      franchise_name: "大连加盟商十五",
+      site_status: "正常",
+      total_contribution: 812430.8,
+      outbound_contribution: 694210.8,
+      inbound_contribution: 118220,
+      deduction_total: 15800,
+      outbound_tickets: 98400,
+      inbound_signed_tickets: 201600,
+      tags: ["正贡献"],
+    },
+    {
+      name: "营口鲅鱼圈一部",
+      franchise_name: "营口加盟商三十一",
+      site_status: "正常",
+      total_contribution: 622100.52,
+      outbound_contribution: 568700.52,
+      inbound_contribution: 53400,
+      deduction_total: 52800,
+      outbound_tickets: 76600,
+      inbound_signed_tickets: 146900,
+      tags: ["扣款关注"],
+    },
+    {
+      name: "大连旅顺一部",
+      franchise_name: "大连加盟商二十一(邵文东)",
+      site_status: "复核",
+      total_contribution: -88400.4,
+      outbound_contribution: 31800.2,
+      inbound_contribution: -120200.6,
+      deduction_total: 24600,
+      outbound_tickets: 15120,
+      inbound_signed_tickets: 68200,
+      tags: ["负贡献", "进港亏损"],
+    },
+    {
+      name: "沈阳于洪五部",
+      franchise_name: "沈阳加盟商七十六",
+      site_status: "复核",
+      total_contribution: -64220.18,
+      outbound_contribution: 18420.82,
+      inbound_contribution: -82641,
+      deduction_total: 9800,
+      outbound_tickets: 10880,
+      inbound_signed_tickets: 54460,
+      tags: ["负贡献", "进港亏损"],
+    },
+    {
+      name: "抚顺望花一部",
+      franchise_name: "抚顺加盟商九",
+      site_status: "正常",
+      total_contribution: 22100.12,
+      outbound_contribution: 52900.12,
+      inbound_contribution: -30800,
+      deduction_total: 39200,
+      outbound_tickets: 18440,
+      inbound_signed_tickets: 72100,
+      tags: ["进港亏损", "扣款关注"],
+    },
+  ],
   heatmap: {
     period_month: PERIOD_MONTH,
     region_code: REGION_CODE,
@@ -326,17 +432,18 @@ async function fetchDashboardData(): Promise<DashboardData> {
   }
 
   const params = `period_month=${PERIOD_MONTH}&region_code=${REGION_CODE}`;
-  const [overviewData, topRankData, bottomRankData, heatmap] = await Promise.all([
+  const [overviewData, topRankData, bottomRankData, siteRank, heatmap] = await Promise.all([
     fetchJson<Overview>(`/api/dashboard/overview?${params}`),
     fetchJson<RankItem[]>(`/api/dashboard/franchises/rank?${params}&metric=total_contribution&direction=desc&limit=8`),
     fetchJson<RankItem[]>(`/api/dashboard/franchises/rank?${params}&metric=total_contribution&direction=asc&limit=8`),
+    fetchJson<SiteRankItem[]>(`/api/dashboard/sites/rank?${params}&metric=total_contribution&direction=desc&limit=12`),
     fetchJson<ContributionHeatmap>(`/api/dashboard/contribution-flow/heatmap?${params}&scope_type=region&metric=contribution_total&province_limit=12`),
   ]);
   const [importJob, importValidation] = await Promise.all([
     fetchOptionalJson<ImportJob>(`/api/import/jobs/${IMPORT_JOB_ID}`),
     fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${IMPORT_JOB_ID}/validation-results`),
   ]);
-  return { overview: overviewData, topRank: topRankData, bottomRank: bottomRankData, heatmap, importJob, importValidation };
+  return { overview: overviewData, topRank: topRankData, bottomRank: bottomRankData, siteRank, heatmap, importJob, importValidation };
 }
 
 function moneyWan(value: number | null | undefined) {
@@ -919,6 +1026,142 @@ function FranchiseView({ data, maxContribution }: { data: DashboardData | null; 
   );
 }
 
+function SiteView({ data }: { data: DashboardData | null }) {
+  const siteItems = data?.siteRank ?? [];
+  const totalSites = data?.overview.site_count ?? 0;
+  const negativeSites = siteItems.filter((item) => item.total_contribution < 0);
+  const inboundLossSites = siteItems.filter((item) => (item.inbound_contribution ?? 0) < 0);
+  const deductionRiskSites = siteItems.filter((item) => (item.deduction_total ?? 0) >= 20000);
+  const topSite = siteItems[0];
+  const maxSiteContribution = Math.max(1, ...siteItems.map((item) => Math.abs(item.total_contribution)));
+  const sampleContribution = siteItems.reduce((sum, item) => sum + item.total_contribution, 0);
+  const sampleTickets = siteItems.reduce((sum, item) => sum + (item.outbound_tickets ?? 0), 0);
+
+  return (
+    <section className="site-view">
+      <section className="kpi-grid">
+        <KpiCard label="网点总数" value={`${totalSites}`} />
+        <KpiCard label="样本网点贡献" value={moneyWan(sampleContribution)} tone={sampleContribution < 0 ? "risk" : "good"} />
+        <KpiCard label="负贡献网点" value={`${negativeSites.length}`} tone={negativeSites.length ? "risk" : "neutral"} />
+        <KpiCard label="样本出港票量" value={countWan(sampleTickets)} />
+      </section>
+
+      <section className="dashboard-grid">
+        <article className="panel">
+          <div className="panel-head">
+            <h2>网点贡献排行</h2>
+            <span>Top 12 / 万元</span>
+          </div>
+          <div className="rank-list">
+            {siteItems.length ? (
+              siteItems.slice(0, 8).map((item) => (
+                <RankBar
+                  key={`${item.franchise_name}-${item.name}`}
+                  item={item}
+                  max={maxSiteContribution}
+                />
+              ))
+            ) : (
+              <div className="empty-panel">暂无网点排行数据</div>
+            )}
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="panel-head">
+            <h2>网点风险样本</h2>
+            <span>负贡献 / 进港亏损 / 扣款</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>网点</th>
+                <th>加盟商</th>
+                <th>标签</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...new Set([...negativeSites, ...inboundLossSites, ...deductionRiskSites])].length ? (
+                [...new Set([...negativeSites, ...inboundLossSites, ...deductionRiskSites])].slice(0, 8).map((item) => (
+                  <tr key={`${item.franchise_name}-${item.name}`}>
+                    <td>{item.name}</td>
+                    <td>{item.franchise_name}</td>
+                    <td>{item.tags.join(" / ") || "待复核"}</td>
+                  </tr>
+                ))
+              ) : (
+                <EmptyRows colSpan={3} />
+              )}
+            </tbody>
+          </table>
+        </article>
+
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>网点贡献明细</h2>
+            <span>粒度：月 / 区域 / 加盟商 / 网点</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>网点</th>
+                <th>所属加盟商</th>
+                <th>状态</th>
+                <th>总贡献</th>
+                <th>出港贡献</th>
+                <th>进港贡献</th>
+                <th>扣款</th>
+                <th>出港票量</th>
+              </tr>
+            </thead>
+            <tbody>
+              {siteItems.length ? (
+                siteItems.map((item) => (
+                  <tr key={`${item.franchise_name}-${item.name}-${item.total_contribution}`}>
+                    <td>{item.name}</td>
+                    <td>{item.franchise_name}</td>
+                    <td>{item.site_status || "正常"}</td>
+                    <td className={item.total_contribution < 0 ? "negative-text" : ""}>{signedMoneyWan(item.total_contribution)}</td>
+                    <td>{signedMoneyWan(item.outbound_contribution)}</td>
+                    <td className={(item.inbound_contribution ?? 0) < 0 ? "negative-text" : ""}>
+                      {signedMoneyWan(item.inbound_contribution)}
+                    </td>
+                    <td className={(item.deduction_total ?? 0) >= 20000 ? "negative-text" : ""}>{moneyWan(item.deduction_total)}</td>
+                    <td>{countWan(item.outbound_tickets)}</td>
+                  </tr>
+                ))
+              ) : (
+                <EmptyRows colSpan={8} />
+              )}
+            </tbody>
+          </table>
+        </article>
+
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>网点关注点</h2>
+            <span>自动识别</span>
+          </div>
+          <div className="insight-grid">
+            <div>
+              <strong>{topSite?.name ?? "-"}</strong>
+              <span>当前样本贡献最高网点，所属加盟商为 {topSite?.franchise_name ?? "-"}。</span>
+            </div>
+            <div>
+              <strong>{inboundLossSites.length}</strong>
+              <span>个样本网点存在进港亏损，需要复核进港成本、签收量和派费口径。</span>
+            </div>
+            <div>
+              <strong>{deductionRiskSites.length}</strong>
+              <span>个样本网点扣款超过 2 万元，建议进入扣款视图继续拆分。</span>
+            </div>
+          </div>
+        </article>
+      </section>
+    </section>
+  );
+}
+
 function FlowView({ heatmap }: { heatmap: ContributionHeatmap | null | undefined }) {
   const provinceTotals = sumHeatmapByProvince(heatmap);
   const weightBandTotals = sumHeatmapByWeightBand(heatmap);
@@ -1304,6 +1547,8 @@ export function App() {
         ) : null}
 
         {activeView === "franchise" ? <FranchiseView data={data} maxContribution={maxContribution} /> : null}
+
+        {activeView === "site" ? <SiteView data={data} /> : null}
 
         {activeView === "flow" ? <FlowView heatmap={data?.heatmap} /> : null}
 

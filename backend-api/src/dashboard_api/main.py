@@ -4,8 +4,22 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .db import get_contribution_heatmap, get_franchise_rank, get_import_job, get_import_validation_results, get_overview
-from .schemas import ContributionHeatmapResponse, ImportJobResponse, ImportValidationResponse, OverviewResponse, RankItem
+from .db import (
+    get_contribution_heatmap,
+    get_franchise_rank,
+    get_import_job,
+    get_import_validation_results,
+    get_overview,
+    get_site_rank,
+)
+from .schemas import (
+    ContributionHeatmapResponse,
+    ImportJobResponse,
+    ImportValidationResponse,
+    OverviewResponse,
+    RankItem,
+    SiteRankItem,
+)
 
 app = FastAPI(title="Liaoning Franchise Contribution Dashboard API", version="0.1.0")
 
@@ -37,6 +51,23 @@ def franchise_rank(
     limit: int = 10,
 ) -> list[RankItem]:
     return get_franchise_rank(
+        period_month=period_month,
+        region_code=region_code,
+        metric=metric,
+        direction=direction,
+        limit=limit,
+    )
+
+
+@app.get("/api/dashboard/sites/rank", response_model=list[SiteRankItem])
+def site_rank(
+    period_month: str = "202604",
+    region_code: str = "LN",
+    metric: str = "total_contribution",
+    direction: str = "desc",
+    limit: int = 10,
+) -> list[SiteRankItem]:
+    return get_site_rank(
         period_month=period_month,
         region_code=region_code,
         metric=metric,

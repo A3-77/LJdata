@@ -26,6 +26,19 @@ class RankItem(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
+class SiteRankItem(BaseModel):
+    name: str
+    franchise_name: str
+    site_status: str | None = None
+    total_contribution: float
+    outbound_contribution: float | None = None
+    inbound_contribution: float | None = None
+    deduction_total: float | None = None
+    outbound_tickets: float | None = None
+    inbound_signed_tickets: float | None = None
+    tags: list[str] = Field(default_factory=list)
+
+
 class ImportJobResponse(BaseModel):
     job_id: int
     status: str
