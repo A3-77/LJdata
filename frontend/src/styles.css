@@ -87,22 +87,41 @@ button:disabled {
   font-size: 16px;
 }
 
-nav {
+.sidebar nav {
   display: grid;
   gap: 6px;
 }
 
-nav a {
-  color: #cbd5e1;
-  text-decoration: none;
-  padding: 10px 12px;
+.sidebar nav button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: auto;
+  min-height: 40px;
+  border: 0;
   border-radius: 6px;
+  background: transparent;
+  color: #cbd5e1;
+  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
 }
 
-nav a.active,
-nav a:hover {
+.sidebar nav button.active,
+.sidebar nav button:not(:disabled):hover {
   background: rgba(255, 255, 255, 0.1);
   color: white;
+}
+
+.sidebar nav button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.sidebar nav small {
+  color: #94a3b8;
+  font-size: 11px;
 }
 
 .content {
@@ -253,6 +272,113 @@ h2 {
 .panel-note {
   color: var(--muted);
   font-size: 13px;
+}
+
+.import-view {
+  display: grid;
+  gap: 12px;
+}
+
+.import-summary {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 12px;
+}
+
+.status-pill,
+.result-pass,
+.result-fail {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 0 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-pill.completed,
+.result-pass {
+  background: var(--good-bg);
+  color: var(--good);
+}
+
+.status-pill.failed,
+.result-fail {
+  background: var(--risk-bg);
+  color: var(--risk);
+}
+
+.status-pill.pending,
+.status-pill.running {
+  background: var(--accent-bg);
+  color: #1f469f;
+}
+
+.job-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.job-meta strong {
+  color: var(--ink);
+}
+
+.progress-track {
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+}
+
+.validation-score {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 16px;
+}
+
+.validation-score strong {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.validation-score span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.validation-counts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.validation-counts span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.validation-counts .pass {
+  background: var(--good-bg);
+  color: var(--good);
+}
+
+.validation-counts .fail {
+  background: var(--risk-bg);
+  color: var(--risk);
 }
 
 .split-bar {
@@ -420,7 +546,8 @@ th {
   }
 
   .kpi-grid,
-  .dashboard-grid {
+  .dashboard-grid,
+  .import-summary {
     grid-template-columns: 1fr;
   }
 }

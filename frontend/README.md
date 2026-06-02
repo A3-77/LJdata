@@ -11,6 +11,13 @@ npm run dev
 
 The dashboard fetches data from the backend API through the Vite `/api` proxy. Start `backend-api` first, or set `VITE_API_BASE_URL` for a deployed API. Current charts use ECharts for franchise ranking and province-weight contribution heatmap.
 
+The import validation view reads import job `1` by default. To inspect another job:
+
+```powershell
+$env:VITE_IMPORT_JOB_ID = "2"
+npm run dev
+```
+
 If PostgreSQL/backend is not available and you only need to inspect the page UI:
 
 ```powershell
