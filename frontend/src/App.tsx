@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchDashboardData, fetchImportDiagnostics } from "./api";
+import { fetchDashboardData, fetchImportDiagnostics, uploadImportFile } from "./api";
 import { DeductionView, FlowView, FranchiseView, ImportView, OverviewView, SiteView } from "./views";
 import { DEMO_MODE, NAV_ITEMS, PERIOD_MONTH, REGION_CODE, REGION_LABEL } from "./constants";
 import { percent } from "./format";
-import type { DashboardData, ViewKey } from "./types";
+import type { DashboardData, UploadImportResponse, ViewKey } from "./types";
 
 export function App() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -48,6 +48,15 @@ export function App() {
         importValidation: diagnostics.importValidation,
       };
     });
+  }
+
+  async function uploadWorkbook(file: File): Promise<UploadImportResponse> {
+    const result = await uploadImportFile(file);
+    await load();
+    if (result.job_id) {
+      setSelectedImportJobId(result.job_id);
+    }
+    return result;
   }
 
   useEffect(() => {
@@ -159,7 +168,7 @@ export function App() {
         {activeView === "deduction" ? <DeductionView data={data} /> : null}
 
         {activeView === "import" ? (
-          <ImportView data={data} selectedJobId={selectedImportJobId} onSelectJob={selectImportJob} />
+          <ImportView data={data} selectedJobId={selectedImportJobId} onSelectJob={selectImportJob} onUpload={uploadWorkbook} />
         ) : null}
       </section>
     </main>

@@ -62,7 +62,7 @@ Run FastAPI:
 
 ```powershell
 cd backend-api
-$env:DATABASE_URL = "postgresql://dashboard:dashboard@localhost:5432/dashboard"
+$env:DATABASE_URL = "postgresql://dashboard:dashboard@127.0.0.1:5432/dashboard"
 $env:PYTHONPATH = "src"
 ..\.venv\Scripts\python.exe -m uvicorn dashboard_api.main:app --reload --port 8000
 ```
@@ -87,6 +87,28 @@ http://localhost:8000/api/import/jobs/1/validation-results
 http://localhost:8000/api/import/jobs/1/errors
 ```
 
+Upload and import from the API:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "http://localhost:8000/api/import/files?region_code=LN&region_name=辽宁区域&template_code=franchise_contribution_v1&replace_period=true" `
+  -Method Post `
+  -Form @{ file = Get-Item "C:\Users\A377\Desktop\辽宁区域_加盟商贡献表_202604（测试）.xlsx" }
+```
+
+The upload endpoint stores the workbook under `data/uploads/`, calls the existing `import-service` `load-workbook` command, records the import job, and refreshes the dashboard data. Configure the runner through:
+
+```text
+DASHBOARD_UPLOAD_DIR
+DASHBOARD_IMPORT_PYTHON
+DASHBOARD_IMPORT_SERVICE_SRC
+DASHBOARD_DEFAULT_REGION_CODE
+DASHBOARD_DEFAULT_REGION_NAME
+DASHBOARD_DEFAULT_TEMPLATE_CODE
+```
+
+When PostgreSQL is not running, dashboard endpoints return `503 database is unavailable` quickly instead of hanging.
+
 ## 4. Frontend
 
 Run the dashboard:
@@ -106,6 +128,7 @@ $env:VITE_PERIOD_MONTH = "202604"
 $env:VITE_REGION_CODE = "LN"
 $env:VITE_REGION_LABEL = "辽宁"
 $env:VITE_IMPORT_JOB_ID = "1"
+$env:VITE_TEMPLATE_CODE = "franchise_contribution_v1"
 ```
 
 Open:
@@ -151,10 +174,11 @@ Implemented:
 - PostgreSQL schema and core seed data.
 - Python workbook inspection, extraction, source file tracking, import job tracking, validation reporting, and PostgreSQL loading CLI.
 - FastAPI dashboard endpoints backed by PostgreSQL.
-- React dashboard shell backed by API calls, with loading, error, empty states, ranking chart, and province-weight heatmap.
+- React dashboard shell backed by API calls, with loading, error, empty states, ranking chart, province-weight heatmap, import diagnostics, import history selection, and workbook upload.
 - Cloudflare Worker API gateway and upload queue skeleton.
+- Local backend workbook upload endpoint that reuses the Python import CLI.
 
 Next:
 
-- Add import error row-level persistence.
-- Wire Cloudflare Worker upload tasks to `load-workbook`.
+- Wire Cloudflare Worker upload queue tasks to the backend import runner.
+- Add asynchronous job execution for large workbooks so upload requests do not wait for the whole import.

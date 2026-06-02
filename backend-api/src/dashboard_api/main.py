@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
@@ -24,7 +24,9 @@ from .schemas import (
     OverviewResponse,
     RankItem,
     SiteRankItem,
+    UploadImportResponse,
 )
+from .import_runner import run_workbook_import, save_upload
 
 app = FastAPI(title="Liaoning Franchise Contribution Dashboard API", version="0.1.0")
 
@@ -125,3 +127,21 @@ def import_validation_results(job_id: int) -> ImportValidationResponse:
 @app.get("/api/import/jobs/{job_id}/errors", response_model=ImportErrorResponse)
 def import_errors(job_id: int) -> ImportErrorResponse:
     return get_import_errors(job_id)
+
+
+@app.post("/api/import/files", response_model=UploadImportResponse)
+async def upload_import_file(
+    file: UploadFile = File(...),
+    region_code: str = settings.default_region_code,
+    region_name: str = settings.default_region_name,
+    template_code: str = settings.default_template_code,
+    replace_period: bool = True,
+) -> UploadImportResponse:
+    workbook_path = await save_upload(file)
+    return run_workbook_import(
+        workbook_path,
+        region_code=region_code,
+        region_name=region_name,
+        template_code=template_code,
+        replace_period=replace_period,
+    )

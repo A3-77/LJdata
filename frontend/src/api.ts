@@ -1,4 +1,4 @@
-import { API_BASE, DEMO_MODE, IMPORT_JOB_ID, PERIOD_MONTH, REGION_CODE } from "./constants";
+import { API_BASE, DEMO_MODE, IMPORT_JOB_ID, PERIOD_MONTH, REGION_CODE, REGION_LABEL, TEMPLATE_CODE } from "./constants";
 import { demoData } from "./demoData";
 import type {
   ContributionHeatmap,
@@ -10,14 +10,37 @@ import type {
   Overview,
   RankItem,
   SiteRankItem,
+  UploadImportResponse,
 } from "./types";
 
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`);
   if (!response.ok) {
-    throw new Error(`${response.status} ${response.statusText}`);
+    throw new Error(await responseError(response));
   }
   return response.json() as Promise<T>;
+}
+
+async function responseError(response: Response): Promise<string> {
+  try {
+    const payload = await response.json();
+    if (typeof payload.detail === "string") {
+      return payload.detail;
+    }
+    if (Array.isArray(payload.detail)) {
+      return payload.detail
+        .map((item: unknown) => {
+          if (item && typeof item === "object" && "msg" in item) {
+            return String(item.msg);
+          }
+          return JSON.stringify(item);
+        })
+        .join("; ");
+    }
+  } catch {
+    // Fall through to the HTTP status text.
+  }
+  return `${response.status} ${response.statusText}`;
 }
 
 async function fetchOptionalJson<T>(path: string): Promise<T | null> {
@@ -85,4 +108,27 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     importValidation: diagnostics.importValidation,
     importErrors: diagnostics.importErrors,
   };
+}
+
+export async function uploadImportFile(file: File): Promise<UploadImportResponse> {
+  if (DEMO_MODE) {
+    throw new Error("演示模式不能上传文件，请连接真实 API 后再导入。");
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+  const params = new URLSearchParams({
+    region_code: REGION_CODE,
+    region_name: `${REGION_LABEL}区域`,
+    template_code: TEMPLATE_CODE,
+    replace_period: "true",
+  });
+  const response = await fetch(`${API_BASE}/api/import/files?${params.toString()}`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) {
+    throw new Error(await responseError(response));
+  }
+  return response.json() as Promise<UploadImportResponse>;
 }

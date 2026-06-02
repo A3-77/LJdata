@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -92,6 +94,14 @@ class ImportErrorResponse(BaseModel):
     job_id: int
     error_count: int
     errors: list[ImportErrorItem]
+
+
+class UploadImportResponse(BaseModel):
+    job_id: int | None = None
+    status: str
+    file_name: str
+    message: str
+    summary: dict[str, Any] = Field(default_factory=dict)
 
 
 class ContributionHeatmapCell(BaseModel):

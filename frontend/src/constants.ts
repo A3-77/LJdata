@@ -6,6 +6,7 @@ export const PERIOD_MONTH = import.meta.env.VITE_PERIOD_MONTH ?? "202604";
 export const REGION_CODE = import.meta.env.VITE_REGION_CODE ?? "LN";
 export const REGION_LABEL = import.meta.env.VITE_REGION_LABEL ?? "辽宁";
 export const IMPORT_JOB_ID = Number(import.meta.env.VITE_IMPORT_JOB_ID ?? "1");
+export const TEMPLATE_CODE = import.meta.env.VITE_TEMPLATE_CODE ?? "franchise_contribution_v1";
 
 export const WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7", "8", "9", "10.3", "＞10.3"];
 

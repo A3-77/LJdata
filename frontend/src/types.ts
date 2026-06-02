@@ -109,4 +109,12 @@ export type ImportErrorResponse = {
   errors: ImportErrorItem[];
 };
 
+export type UploadImportResponse = {
+  job_id: number | null;
+  status: string;
+  file_name: string;
+  message: string;
+  summary: Record<string, unknown>;
+};
+
 export type ViewKey = "overview" | "franchise" | "site" | "flow" | "deduction" | "import";

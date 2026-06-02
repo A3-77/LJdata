@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import socket
 from decimal import Decimal
 from typing import Any
+from urllib.parse import urlparse
 
 from fastapi import HTTPException
 
@@ -64,7 +66,19 @@ def _as_float(value: Any) -> float:
 def _connect():
     psycopg, dict_row = _require_psycopg()
     try:
-        return psycopg.connect(settings.database_url, row_factory=dict_row)
+        parsed = urlparse(settings.database_url)
+        if parsed.hostname:
+            port = parsed.port or 5432
+            with socket.create_connection(
+                (parsed.hostname, port),
+                timeout=settings.database_preflight_timeout,
+            ):
+                pass
+        return psycopg.connect(
+            settings.database_url,
+            row_factory=dict_row,
+            connect_timeout=settings.database_connect_timeout,
+        )
     except Exception as exc:
         raise HTTPException(status_code=503, detail="database is unavailable") from exc
 

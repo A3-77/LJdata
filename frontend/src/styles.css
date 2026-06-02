@@ -326,6 +326,71 @@ h2 {
   gap: 12px;
 }
 
+.upload-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.file-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: min(100%, 360px);
+  max-width: 100%;
+  min-height: 38px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.file-picker input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-picker span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.primary-action {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-action:disabled {
+  border-color: var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.success-note {
+  color: var(--good);
+}
+
+.error-note {
+  color: var(--risk);
+  overflow-wrap: anywhere;
+}
+
 .status-pill,
 .result-pass,
 .result-fail {

@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { HeatmapChartView, RankChart } from "./charts";
 import { DeductionBar, EmptyRows, KpiCard, RankBar, StatusPill } from "./components";
 import { DEMO_MODE, METRIC_LABELS } from "./constants";
 import { countWan, moneyWan, percent, plainNumber, signedMoneyWan } from "./format";
 import { sumHeatmapByProvince, sumHeatmapByWeightBand } from "./heatmapUtils";
-import type { ContributionHeatmap, DashboardData, Overview, RankItem } from "./types";
+import type { ContributionHeatmap, DashboardData, Overview, RankItem, UploadImportResponse } from "./types";
 export function OverviewView({
   data,
   loading,
@@ -112,11 +113,17 @@ export function ImportView({
   data,
   selectedJobId,
   onSelectJob,
+  onUpload,
 }: {
   data: DashboardData | null;
   selectedJobId: number | null;
   onSelectJob: (jobId: number) => void;
+  onUpload: (file: File) => Promise<UploadImportResponse>;
 }) {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<UploadImportResponse | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const job = data?.importJob;
   const importJobs = data?.importJobs ?? [];
   const validation = data?.importValidation;
@@ -124,8 +131,59 @@ export function ImportView({
   const totalRules = (validation?.passed ?? 0) + (validation?.failed ?? 0);
   const passRate = totalRules ? percent(validation?.passed ?? 0, totalRules) : 0;
 
+  async function submitUpload() {
+    if (!selectedFile || uploading) {
+      return;
+    }
+    setUploading(true);
+    setUploadError(null);
+    setUploadResult(null);
+    try {
+      const result = await onUpload(selectedFile);
+      setUploadResult(result);
+      setSelectedFile(null);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : "上传导入失败");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <section className="import-view">
+      <article className="panel wide upload-panel">
+        <div className="panel-head">
+          <h2>上传 Excel 并导入</h2>
+          <span>支持 .xlsx / .xlsm，默认替换同区域同月份数据</span>
+        </div>
+        <div className="upload-row">
+          <label className="file-picker">
+            <input
+              type="file"
+              accept=".xlsx,.xlsm"
+              disabled={uploading}
+              onChange={(event) => {
+                setSelectedFile(event.target.files?.[0] ?? null);
+                setUploadError(null);
+                setUploadResult(null);
+              }}
+            />
+            <span>{selectedFile ? selectedFile.name : "选择 Excel 文件"}</span>
+          </label>
+          <button type="button" className="primary-action" disabled={!selectedFile || uploading} onClick={submitUpload}>
+            {uploading ? "导入中" : "上传并导入"}
+          </button>
+        </div>
+        {uploadResult ? (
+          <p className="panel-note success-note">
+            已完成任务 {uploadResult.job_id ? `#${uploadResult.job_id}` : ""}：{uploadResult.message}
+          </p>
+        ) : null}
+        {uploadError ? (
+          <p className="panel-note error-note">{uploadError}</p>
+        ) : null}
+      </article>
+
       <section className="import-summary">
         <article className="panel">
           <div className="panel-head">
