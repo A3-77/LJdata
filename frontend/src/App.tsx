@@ -97,7 +97,7 @@ const NAV_ITEMS: { key: ViewKey; label: string; enabled: boolean }[] = [
   { key: "franchise", label: "加盟商贡献", enabled: true },
   { key: "site", label: "网点下钻", enabled: false },
   { key: "flow", label: "目的省份与公斤段", enabled: true },
-  { key: "deduction", label: "扣款与补贴", enabled: false },
+  { key: "deduction", label: "扣款与补贴", enabled: true },
   { key: "import", label: "数据导入", enabled: true },
 ];
 const METRIC_LABELS: Record<string, string> = {
@@ -432,6 +432,23 @@ function RankBar({ item, max }: { item: RankItem; max: number }) {
         <div className={negative ? "rank-bar negative" : "rank-bar"} style={{ width: `${width}%` }} />
       </div>
       <span className={negative ? "amount negative-text" : "amount"}>{moneyWan(item.total_contribution)}</span>
+    </div>
+  );
+}
+
+function DeductionBar({ item, max }: { item: RankItem; max: number }) {
+  const deduction = item.deduction_total ?? 0;
+  const width = Math.max(4, percent(deduction, max));
+  return (
+    <div className="rank-row">
+      <div className="rank-label">
+        <strong title={item.name}>{item.name}</strong>
+        <span>{item.tags.join(" / ") || "待复核"}</span>
+      </div>
+      <div className="rank-track" aria-hidden="true">
+        <div className="rank-bar negative" style={{ width: `${width}%` }} />
+      </div>
+      <span className="amount negative-text">{moneyWan(deduction)}</span>
     </div>
   );
 }
@@ -1050,6 +1067,138 @@ function FlowView({ heatmap }: { heatmap: ContributionHeatmap | null | undefined
   );
 }
 
+function DeductionView({ data }: { data: DashboardData | null }) {
+  const visibleItems = [...(data?.topRank ?? []), ...(data?.bottomRank ?? [])];
+  const deductionItems = visibleItems
+    .filter((item) => (item.deduction_total ?? 0) > 0)
+    .sort((a, b) => (b.deduction_total ?? 0) - (a.deduction_total ?? 0));
+  const highRiskItems = deductionItems.filter((item) => (item.deduction_total ?? 0) >= 50000);
+  const maxDeduction = Math.max(1, ...deductionItems.map((item) => item.deduction_total ?? 0));
+  const overviewDeduction = data?.overview.deduction_total ?? 0;
+  const overviewContribution = data?.overview.total_contribution ?? 0;
+  const deductionRatio = overviewContribution ? percent(overviewDeduction, overviewContribution) : 0;
+  const sampleDeductionTotal = deductionItems.reduce((sum, item) => sum + (item.deduction_total ?? 0), 0);
+  const strongestDeduction = deductionItems[0];
+
+  return (
+    <section className="deduction-view">
+      <section className="kpi-grid">
+        <KpiCard label="扣款小计" value={moneyWan(overviewDeduction)} tone="risk" />
+        <KpiCard label="扣款 / 总贡献" value={`${deductionRatio.toFixed(1)}%`} tone={deductionRatio > 10 ? "risk" : "neutral"} />
+        <KpiCard label="高扣款样本数" value={`${highRiskItems.length}`} tone={highRiskItems.length ? "risk" : "neutral"} />
+        <KpiCard label="样本扣款合计" value={moneyWan(sampleDeductionTotal)} tone="risk" />
+      </section>
+
+      <section className="dashboard-grid">
+        <article className="panel">
+          <div className="panel-head">
+            <h2>扣款排行</h2>
+            <span>样本 / 万元</span>
+          </div>
+          <div className="rank-list">
+            {deductionItems.length ? (
+              deductionItems.slice(0, 8).map((item) => <DeductionBar key={item.name} item={item} max={maxDeduction} />)
+            ) : (
+              <div className="empty-panel">暂无扣款样本</div>
+            )}
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="panel-head">
+            <h2>高扣款风险</h2>
+            <span>扣款 ≥ 5 万元</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>加盟商</th>
+                <th>扣款</th>
+                <th>总贡献</th>
+              </tr>
+            </thead>
+            <tbody>
+              {highRiskItems.length ? (
+                highRiskItems.map((item) => (
+                  <tr key={item.name}>
+                    <td>{item.name}</td>
+                    <td className="negative-text">{moneyWan(item.deduction_total)}</td>
+                    <td className={item.total_contribution < 0 ? "negative-text" : ""}>{signedMoneyWan(item.total_contribution)}</td>
+                  </tr>
+                ))
+              ) : (
+                <EmptyRows colSpan={3} />
+              )}
+            </tbody>
+          </table>
+        </article>
+
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>扣款影响明细</h2>
+            <span>粒度：月 / 区域 / 加盟商</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>加盟商</th>
+                <th>扣款小计</th>
+                <th>总贡献</th>
+                <th>扣款 / 总贡献</th>
+                <th>进港贡献</th>
+                <th>标签</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deductionItems.length ? (
+                deductionItems.map((item) => {
+                  const deduction = item.deduction_total ?? 0;
+                  const itemRatio = item.total_contribution ? percent(deduction, Math.abs(item.total_contribution)) : 0;
+                  return (
+                    <tr key={`${item.name}-${deduction}`}>
+                      <td>{item.name}</td>
+                      <td className="negative-text">{moneyWan(deduction)}</td>
+                      <td className={item.total_contribution < 0 ? "negative-text" : ""}>{signedMoneyWan(item.total_contribution)}</td>
+                      <td className={itemRatio >= 10 ? "negative-text" : ""}>{itemRatio.toFixed(1)}%</td>
+                      <td className={(item.inbound_contribution ?? 0) < 0 ? "negative-text" : ""}>
+                        {signedMoneyWan(item.inbound_contribution)}
+                      </td>
+                      <td>{item.tags.join(" / ") || "正常"}</td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <EmptyRows colSpan={6} />
+              )}
+            </tbody>
+          </table>
+        </article>
+
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>扣款与补贴关注点</h2>
+            <span>当前口径</span>
+          </div>
+          <div className="insight-grid">
+            <div>
+              <strong>{strongestDeduction?.name ?? "-"}</strong>
+              <span>当前样本中扣款最高，扣款为 {moneyWan(strongestDeduction?.deduction_total)}。</span>
+            </div>
+            <div>
+              <strong>{deductionRatio.toFixed(1)}%</strong>
+              <span>区域扣款小计占总贡献比例，用于判断贡献被扣款侵蚀程度。</span>
+            </div>
+            <div>
+              <strong>待接入</strong>
+              <span>补贴明细字段尚未进入当前 API，后续需要按费用类型、事件和来源 sheet 拆分。</span>
+            </div>
+          </div>
+        </article>
+      </section>
+    </section>
+  );
+}
+
 export function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1157,6 +1306,8 @@ export function App() {
         {activeView === "franchise" ? <FranchiseView data={data} maxContribution={maxContribution} /> : null}
 
         {activeView === "flow" ? <FlowView heatmap={data?.heatmap} /> : null}
+
+        {activeView === "deduction" ? <DeductionView data={data} /> : null}
 
         {activeView === "import" ? <ImportView data={data} /> : null}
       </section>
