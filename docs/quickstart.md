@@ -101,6 +101,16 @@ Open:
 http://localhost:5173
 ```
 
+If Docker/PostgreSQL is not ready yet, run the frontend in explicit demo mode:
+
+```powershell
+cd frontend
+$env:VITE_DEMO_MODE = "true"
+npm run dev
+```
+
+Demo mode is only for UI inspection. It uses the validated 202604 overview totals and sample chart rows, while the normal mode still reads the real backend API.
+
 ## 5. Cloudflare Worker
 
 Run the Worker gateway:

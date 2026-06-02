@@ -40,6 +40,19 @@ button:disabled {
   opacity: 0.58;
 }
 
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  border: 1px solid #b8e2c9;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--good-bg);
+  color: var(--good);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .shell {
   min-height: 100vh;
   display: grid;
@@ -148,6 +161,12 @@ h2 {
   border-color: #f4b8b3;
   background: var(--risk-bg);
   color: var(--risk);
+}
+
+.notice.info {
+  border-color: #c7d4f8;
+  background: var(--accent-bg);
+  color: #1f469f;
 }
 
 .kpi-grid {
