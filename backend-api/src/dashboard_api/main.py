@@ -33,9 +33,16 @@ def franchise_rank(
     period_month: str = "202604",
     region_code: str = "LN",
     metric: str = "total_contribution",
+    direction: str = "desc",
     limit: int = 10,
 ) -> list[RankItem]:
-    return get_franchise_rank(period_month=period_month, region_code=region_code, metric=metric, limit=limit)
+    return get_franchise_rank(
+        period_month=period_month,
+        region_code=region_code,
+        metric=metric,
+        direction=direction,
+        limit=limit,
+    )
 
 
 @app.get("/api/import/jobs/{job_id}", response_model=ImportJobResponse)

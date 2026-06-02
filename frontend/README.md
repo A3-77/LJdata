@@ -9,4 +9,4 @@ npm install
 npm run dev
 ```
 
-The initial screen uses verified 202604 sample values. Replace static values with API calls after backend endpoints are wired.
+The dashboard fetches data from the backend API through the Vite `/api` proxy. Start `backend-api` first, or set `VITE_API_BASE_URL` for a deployed API.

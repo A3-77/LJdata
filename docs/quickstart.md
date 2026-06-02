@@ -71,7 +71,8 @@ Dashboard checks:
 
 ```text
 http://localhost:8000/api/dashboard/overview?period_month=202604&region_code=LN
-http://localhost:8000/api/dashboard/franchises/rank?period_month=202604&region_code=LN&metric=total_contribution&limit=10
+http://localhost:8000/api/dashboard/franchises/rank?period_month=202604&region_code=LN&metric=total_contribution&direction=desc&limit=10
+http://localhost:8000/api/dashboard/franchises/rank?period_month=202604&region_code=LN&metric=total_contribution&direction=asc&limit=10
 ```
 
 ## 4. Frontend
@@ -83,6 +84,8 @@ cd frontend
 npm install
 npm run dev
 ```
+
+The frontend uses Vite's `/api` proxy in local development. Start `backend-api` first. For a deployed API, set `VITE_API_BASE_URL`.
 
 Open:
 
@@ -107,12 +110,11 @@ Implemented:
 - PostgreSQL schema and core seed data.
 - Python workbook inspection, extraction, and PostgreSQL loading CLI.
 - FastAPI dashboard endpoints backed by PostgreSQL.
-- React dashboard shell with verified sample values.
+- React dashboard shell backed by API calls, with loading, error, and empty states.
 - Cloudflare Worker API gateway and upload queue skeleton.
 
 Next:
 
-- Replace frontend static data with API calls.
 - Add ECharts implementations.
 - Persist source_file and import_job records.
 - Add validation report persistence.

@@ -39,20 +39,20 @@ outputs/
 
 ## 推荐下一步
 
-1. 生成数据库建表 SQL。
-2. 生成 Excel 导入服务骨架。
-3. 生成 Cloudflare Workers API 骨架。
-4. 生成 React 看板前端骨架。
-5. 用当前 202604 Excel 做导入回归测试。
+1. 在安装 Docker/PostgreSQL 的环境做真实入库回归。
+2. 为前端加入 ECharts 热力图、排行图和贡献拆解图。
+3. 持久化 `source_file` 与 `import_job`，打通上传导入任务。
+4. 增加校验报告与异常明细。
+5. 为 Cloudflare Pages/Workers/R2/Queues 补部署配置。
 
 ## 当前状态
 
 已创建 MVP 工程骨架：
 
 - `database/`：PostgreSQL 建表和种子数据。
-- `import-service/`：Python Excel 检查 CLI。
-- `backend-api/`：FastAPI 查询接口骨架。
-- `frontend/`：React/Vite 看板骨架。
+- `import-service/`：Python Excel 检查、抽取、入库 CLI。
+- `backend-api/`：FastAPI 查询接口，已对接 PostgreSQL。
+- `frontend/`：React/Vite 看板，已从 API 拉取总览、Top/Bottom 排行。
 - `cloudflare/`：Workers、R2、Queues 入口骨架。
 
 启动说明见：

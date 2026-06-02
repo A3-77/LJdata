@@ -87,10 +87,12 @@ def get_overview(period_month: str, region_code: str) -> OverviewResponse:
     )
 
 
-def get_franchise_rank(period_month: str, region_code: str, metric: str, limit: int) -> list[RankItem]:
+def get_franchise_rank(period_month: str, region_code: str, metric: str, direction: str, limit: int) -> list[RankItem]:
     order_column = RANK_METRICS.get(metric)
     if order_column is None:
         raise HTTPException(status_code=400, detail=f"unsupported metric: {metric}")
+    if direction not in {"asc", "desc"}:
+        raise HTTPException(status_code=400, detail=f"unsupported direction: {direction}")
 
     bounded_limit = max(1, min(limit, 100))
     sql = f"""
@@ -108,7 +110,7 @@ def get_franchise_rank(period_month: str, region_code: str, metric: str, limit: 
           ]::text[], null::text) as tags
         from fact_franchise_month
         where period_month = %s and region_code = %s
-        order by {order_column} desc nulls last
+        order by {order_column} {direction} nulls last
         limit %s
     """
     with _connect() as conn:

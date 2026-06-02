@@ -35,6 +35,11 @@ button {
   font: inherit;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
 .shell {
   min-height: 100vh;
   display: grid;
@@ -126,6 +131,25 @@ h2 {
   justify-content: flex-end;
 }
 
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.notice.error {
+  border-color: #f4b8b3;
+  background: var(--risk-bg);
+  color: var(--risk);
+}
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
@@ -151,6 +175,24 @@ h2 {
 
 .kpi strong {
   font-size: 24px;
+}
+
+.kpi.loading strong {
+  position: relative;
+  overflow: hidden;
+  width: 70%;
+  height: 29px;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+
+.kpi.loading strong::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  animation: shimmer 1.2s ease-in-out infinite;
 }
 
 .kpi.good {
@@ -225,6 +267,25 @@ h2 {
   gap: 12px;
 }
 
+.empty-panel,
+.empty-cell {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.empty-panel {
+  display: grid;
+  place-items: center;
+  min-height: 96px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.empty-cell {
+  text-align: center;
+}
+
 .rank-row {
   display: grid;
   grid-template-columns: minmax(180px, 1.1fr) 1fr 100px;
@@ -293,6 +354,18 @@ th {
   font-weight: 600;
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kpi.loading strong::after {
+    animation: none;
+  }
+}
+
 @media (max-width: 980px) {
   .shell {
     grid-template-columns: 1fr;
@@ -334,4 +407,3 @@ th {
     text-align: left;
   }
 }
-
