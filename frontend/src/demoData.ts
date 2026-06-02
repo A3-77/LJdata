@@ -1,4 +1,4 @@
-import { PERIOD_MONTH, REGION_CODE, WEIGHT_BANDS } from "./constants";
+import { PERIOD_MONTH, REGION_CODE, REGION_LABEL, WEIGHT_BANDS } from "./constants";
 import type { ContributionHeatmapCell, DashboardData } from "./types";
 
 const DEMO_PROVINCES = ["广东", "浙江", "江苏", "山东", "河北", "吉林", "黑龙江", "北京", "上海", "内蒙古", "四川", "河南"];
@@ -255,7 +255,7 @@ export const demoData: DashboardData = {
     job_id: 1,
     status: "completed",
     progress: 100,
-    message: "辽宁区域_加盟商贡献表_202604（测试）.xlsx 已完成校验，演示模式未写入数据库。",
+    message: `${REGION_LABEL}区域_加盟商贡献表_${PERIOD_MONTH}（测试）.xlsx 已完成校验，演示模式未写入数据库。`,
   },
   importValidation: {
     job_id: 1,

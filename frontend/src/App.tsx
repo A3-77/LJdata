@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchDashboardData } from "./api";
 import { DeductionView, FlowView, FranchiseView, ImportView, OverviewView, SiteView } from "./views";
-import { DEMO_MODE, NAV_ITEMS, PERIOD_MONTH } from "./constants";
+import { DEMO_MODE, NAV_ITEMS, PERIOD_MONTH, REGION_CODE, REGION_LABEL } from "./constants";
 import { percent } from "./format";
 import type { DashboardData, ViewKey } from "./types";
 
@@ -49,7 +49,7 @@ export function App() {
     <main className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <span>LN</span>
+          <span>{REGION_CODE}</span>
           <strong>贡献看板</strong>
         </div>
         <nav>
@@ -71,13 +71,13 @@ export function App() {
       <section className="content">
         <header className="topbar">
           <div>
-            <p>{PERIOD_MONTH} / 辽宁区域</p>
-            <h1>{activeNav?.label ?? "辽宁区域加盟商贡献数据看板"}</h1>
+            <p>{PERIOD_MONTH} / {REGION_LABEL}区域</p>
+            <h1>{activeNav?.label ?? `${REGION_LABEL}区域加盟商贡献数据看板`}</h1>
           </div>
           <div className="filters">
             {DEMO_MODE ? <span className="mode-badge">演示数据</span> : null}
             <button type="button">月份 {PERIOD_MONTH}</button>
-            <button type="button">区域 辽宁</button>
+            <button type="button">区域 {REGION_LABEL}</button>
             <button type="button">全部加盟商</button>
             <button type="button" onClick={load} disabled={loading}>刷新</button>
           </div>
@@ -93,7 +93,7 @@ export function App() {
         {DEMO_MODE ? (
           <section className="notice info">
             <strong>前端演示模式</strong>
-            <span>总览 KPI 使用已校验的 202604 汇总值，排行和热力图含部分样例数据；接入 PostgreSQL 后会切回真实 API。</span>
+            <span>总览 KPI 使用已校验的 {PERIOD_MONTH} 汇总值，排行和热力图含部分样例数据；接入 PostgreSQL 后会切回真实 API。</span>
           </section>
         ) : null}
 

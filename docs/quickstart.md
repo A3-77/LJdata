@@ -96,6 +96,15 @@ npm run dev
 
 The frontend uses Vite's `/api` proxy in local development. Start `backend-api` first. For a deployed API, set `VITE_API_BASE_URL`.
 
+The default dashboard context is configured through Vite variables:
+
+```powershell
+$env:VITE_PERIOD_MONTH = "202604"
+$env:VITE_REGION_CODE = "LN"
+$env:VITE_REGION_LABEL = "辽宁"
+$env:VITE_IMPORT_JOB_ID = "1"
+```
+
 Open:
 
 ```text

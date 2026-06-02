@@ -18,6 +18,15 @@ $env:VITE_IMPORT_JOB_ID = "2"
 npm run dev
 ```
 
+For another workbook period or region, set these before starting Vite:
+
+```powershell
+$env:VITE_PERIOD_MONTH = "202605"
+$env:VITE_REGION_CODE = "JL"
+$env:VITE_REGION_LABEL = "吉林"
+npm run dev
+```
+
 If PostgreSQL/backend is not available and you only need to inspect the page UI:
 
 ```powershell
@@ -38,5 +47,7 @@ Build output directory: dist
 ```
 
 Set `VITE_API_BASE_URL` to the Worker origin when Pages is not routing `/api/*` to the Worker. Leave it empty when `/api/*` is routed on the same host.
+
+Use `frontend/.env.example` as the Pages environment variable template. `VITE_PERIOD_MONTH`, `VITE_REGION_CODE`, and `VITE_REGION_LABEL` control which imported period and region the dashboard requests.
 
 `public/_redirects` keeps the React app working when a user refreshes a nested route.
