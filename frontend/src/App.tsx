@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchDashboardData } from "./api";
+import { fetchDashboardData, fetchImportDiagnostics } from "./api";
 import { DeductionView, FlowView, FranchiseView, ImportView, OverviewView, SiteView } from "./views";
 import { DEMO_MODE, NAV_ITEMS, PERIOD_MONTH, REGION_CODE, REGION_LABEL } from "./constants";
 import { percent } from "./format";
@@ -10,17 +10,44 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<ViewKey>("overview");
+  const [selectedImportJobId, setSelectedImportJobId] = useState<number | null>(null);
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      setData(await fetchDashboardData());
+      const nextData = await fetchDashboardData();
+      setData(nextData);
+      setSelectedImportJobId(nextData.importJob?.job_id ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "请求失败");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function selectImportJob(jobId: number) {
+    const job = data?.importJobs.find((item) => item.job_id === jobId);
+    setSelectedImportJobId(jobId);
+    const diagnostics = await fetchImportDiagnostics(jobId);
+    setData((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
+        ...current,
+        importJob: job
+          ? {
+              job_id: job.job_id,
+              status: job.status,
+              progress: job.progress,
+              message: job.message,
+            }
+          : current.importJob,
+        importErrors: diagnostics.importErrors,
+        importValidation: diagnostics.importValidation,
+      };
+    });
   }
 
   useEffect(() => {
@@ -131,7 +158,9 @@ export function App() {
 
         {activeView === "deduction" ? <DeductionView data={data} /> : null}
 
-        {activeView === "import" ? <ImportView data={data} /> : null}
+        {activeView === "import" ? (
+          <ImportView data={data} selectedJobId={selectedImportJobId} onSelectJob={selectImportJob} />
+        ) : null}
       </section>
     </main>
   );

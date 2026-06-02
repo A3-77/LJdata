@@ -37,6 +37,24 @@ async function fetchImportJob(): Promise<ImportJob | null> {
   return fetchOptionalJson<ImportJob>(`/api/import/jobs/${IMPORT_JOB_ID}`);
 }
 
+export async function fetchImportDiagnostics(jobId: number): Promise<{
+  importErrors: ImportErrorResponse | null;
+  importValidation: ImportValidationResponse | null;
+}> {
+  if (DEMO_MODE) {
+    return {
+      importErrors: demoData.importErrors,
+      importValidation: demoData.importValidation,
+    };
+  }
+
+  const [importValidation, importErrors] = await Promise.all([
+    fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${jobId}/validation-results`),
+    fetchOptionalJson<ImportErrorResponse>(`/api/import/jobs/${jobId}/errors`),
+  ]);
+  return { importErrors, importValidation };
+}
+
 export async function fetchDashboardData(): Promise<DashboardData> {
   if (DEMO_MODE) {
     return demoData;
@@ -52,10 +70,9 @@ export async function fetchDashboardData(): Promise<DashboardData> {
   ]);
   const importJob = await fetchImportJob();
   const jobId = importJob?.job_id ?? IMPORT_JOB_ID;
-  const [importJobs, importValidation, importErrors] = await Promise.all([
+  const [importJobs, diagnostics] = await Promise.all([
     fetchJson<ImportJobHistoryItem[]>(`/api/import/jobs?${params}&limit=8`),
-    fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${jobId}/validation-results`),
-    fetchOptionalJson<ImportErrorResponse>(`/api/import/jobs/${jobId}/errors`),
+    fetchImportDiagnostics(jobId),
   ]);
   return {
     overview: overviewData,
@@ -65,7 +82,7 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     heatmap,
     importJob,
     importJobs,
-    importValidation,
-    importErrors,
+    importValidation: diagnostics.importValidation,
+    importErrors: diagnostics.importErrors,
   };
 }

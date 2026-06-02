@@ -108,7 +108,15 @@ export function OverviewView({
   );
 }
 
-export function ImportView({ data }: { data: DashboardData | null }) {
+export function ImportView({
+  data,
+  selectedJobId,
+  onSelectJob,
+}: {
+  data: DashboardData | null;
+  selectedJobId: number | null;
+  onSelectJob: (jobId: number) => void;
+}) {
   const job = data?.importJob;
   const importJobs = data?.importJobs ?? [];
   const validation = data?.importValidation;
@@ -177,8 +185,17 @@ export function ImportView({ data }: { data: DashboardData | null }) {
           <tbody>
             {importJobs.length ? (
               importJobs.map((item) => (
-                <tr key={item.job_id}>
-                  <td>#{item.job_id}</td>
+                <tr key={item.job_id} className={item.job_id === selectedJobId ? "selected-row" : ""}>
+                  <td>
+                    <button
+                      type="button"
+                      className="table-link"
+                      aria-current={item.job_id === selectedJobId ? "true" : undefined}
+                      onClick={() => onSelectJob(item.job_id)}
+                    >
+                      #{item.job_id}
+                    </button>
+                  </td>
                   <td>{item.file_name}</td>
                   <td>{item.period_month}</td>
                   <td>{item.region_code}</td>

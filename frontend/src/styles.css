@@ -582,6 +582,27 @@ th {
   font-weight: 600;
 }
 
+.selected-row {
+  background: var(--accent-bg);
+}
+
+.table-link {
+  height: auto;
+  border: 0;
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.table-link:hover,
+.table-link:focus-visible {
+  background: var(--surface);
+  outline: 1px solid var(--accent);
+}
+
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
