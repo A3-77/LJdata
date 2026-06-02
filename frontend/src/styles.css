@@ -213,6 +213,7 @@ h2 {
 
 .kpi strong {
   font-size: 24px;
+  overflow-wrap: anywhere;
 }
 
 .kpi.loading strong {
@@ -275,6 +276,11 @@ h2 {
 }
 
 .import-view {
+  display: grid;
+  gap: 12px;
+}
+
+.franchise-view {
   display: grid;
   gap: 12px;
 }
@@ -379,6 +385,31 @@ h2 {
 .validation-counts .fail {
   background: var(--risk-bg);
   color: var(--risk);
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.insight-grid div {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface-2);
+}
+
+.insight-grid strong {
+  font-size: 24px;
+}
+
+.insight-grid span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .split-bar {
@@ -547,7 +578,8 @@ th {
 
   .kpi-grid,
   .dashboard-grid,
-  .import-summary {
+  .import-summary,
+  .insight-grid {
     grid-template-columns: 1fr;
   }
 }

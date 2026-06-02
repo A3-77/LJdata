@@ -94,7 +94,7 @@ const IMPORT_JOB_ID = Number(import.meta.env.VITE_IMPORT_JOB_ID ?? "1");
 const WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7", "8", "9", "10.3", "＞10.3"];
 const NAV_ITEMS: { key: ViewKey; label: string; enabled: boolean }[] = [
   { key: "overview", label: "经营总览", enabled: true },
-  { key: "franchise", label: "加盟商贡献", enabled: false },
+  { key: "franchise", label: "加盟商贡献", enabled: true },
   { key: "site", label: "网点下钻", enabled: false },
   { key: "flow", label: "目的省份与公斤段", enabled: false },
   { key: "deduction", label: "扣款与补贴", enabled: false },
@@ -354,6 +354,12 @@ function plainNumber(value: number | null | undefined) {
     return "-";
   }
   return value.toLocaleString("zh-CN", { maximumFractionDigits: 4 });
+}
+
+function signedMoneyWan(value: number | null | undefined) {
+  const raw = value ?? 0;
+  const sign = raw > 0 ? "+" : "";
+  return `${sign}${moneyWan(raw)}`;
 }
 
 function percent(part: number, total: number) {
@@ -752,6 +758,114 @@ function ImportView({ data }: { data: DashboardData | null }) {
   );
 }
 
+function FranchiseView({ data, maxContribution }: { data: DashboardData | null; maxContribution: number }) {
+  const topItems = data?.topRank ?? [];
+  const bottomItems = data?.bottomRank ?? [];
+  const visibleItems = [...topItems, ...bottomItems];
+  const negativeCount = visibleItems.filter((item) => item.total_contribution < 0).length;
+  const inboundLossCount = visibleItems.filter((item) => (item.inbound_contribution ?? 0) < 0).length;
+  const highDeductionCount = visibleItems.filter((item) => (item.deduction_total ?? 0) >= 50000).length;
+  const topThreeTotal = topItems.slice(0, 3).reduce((sum, item) => sum + item.total_contribution, 0);
+  const totalContribution = data?.overview.total_contribution ?? 0;
+  const topThreeShare = totalContribution ? percent(topThreeTotal, totalContribution) : 0;
+
+  return (
+    <section className="franchise-view">
+      <section className="kpi-grid">
+        <KpiCard label="头部加盟商" value={topItems[0]?.name ?? "暂无"} />
+        <KpiCard label="Top 3 贡献占比" value={`${topThreeShare.toFixed(1)}%`} tone="good" />
+        <KpiCard label="负贡献样本数" value={`${negativeCount}`} tone={negativeCount ? "risk" : "neutral"} />
+        <KpiCard label="高扣款样本数" value={`${highDeductionCount}`} tone={highDeductionCount ? "risk" : "neutral"} />
+      </section>
+
+      <section className="dashboard-grid">
+        <article className="panel">
+          <div className="panel-head">
+            <h2>加盟商贡献 Top 8</h2>
+            <span>总贡献 / 万元</span>
+          </div>
+          <RankChart items={topItems} />
+        </article>
+
+        <article className="panel">
+          <div className="panel-head">
+            <h2>低贡献与风险样本</h2>
+            <span>Bottom 8</span>
+          </div>
+          <div className="rank-list">
+            {bottomItems.length ? (
+              bottomItems.map((item) => <RankBar key={item.name} item={item} max={maxContribution} />)
+            ) : (
+              <div className="empty-panel">暂无低贡献样本</div>
+            )}
+          </div>
+        </article>
+
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>贡献拆解明细</h2>
+            <span>粒度：月 / 区域 / 加盟商</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>加盟商</th>
+                <th>总贡献</th>
+                <th>出港贡献</th>
+                <th>进港贡献</th>
+                <th>扣款小计</th>
+                <th>标签</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleItems.length ? (
+                visibleItems.map((item) => (
+                  <tr key={`${item.name}-${item.total_contribution}`}>
+                    <td>{item.name}</td>
+                    <td className={item.total_contribution < 0 ? "negative-text" : ""}>{signedMoneyWan(item.total_contribution)}</td>
+                    <td>{signedMoneyWan(item.outbound_contribution)}</td>
+                    <td className={(item.inbound_contribution ?? 0) < 0 ? "negative-text" : ""}>
+                      {signedMoneyWan(item.inbound_contribution)}
+                    </td>
+                    <td className={(item.deduction_total ?? 0) >= 50000 ? "negative-text" : ""}>{moneyWan(item.deduction_total)}</td>
+                    <td>{item.tags.join(" / ") || "正常"}</td>
+                  </tr>
+                ))
+              ) : (
+                <EmptyRows colSpan={6} />
+              )}
+            </tbody>
+          </table>
+          <p className="panel-note">
+            当前页先使用排名接口返回的 Top/Bottom 样本做加盟商分析。后续接入分页明细后，可扩展为全量搜索、排序和单个加盟商下钻。
+          </p>
+        </article>
+
+        <article className="panel wide">
+          <div className="panel-head">
+            <h2>运营关注点</h2>
+            <span>自动识别</span>
+          </div>
+          <div className="insight-grid">
+            <div>
+              <strong>{inboundLossCount}</strong>
+              <span>个样本存在进港亏损，需要复核签收量、进港成本和补贴口径。</span>
+            </div>
+            <div>
+              <strong>{highDeductionCount}</strong>
+              <span>个样本扣款超过 5 万元，建议进入扣款与补贴视图继续拆分。</span>
+            </div>
+            <div>
+              <strong>{topThreeShare.toFixed(1)}%</strong>
+              <span>来自 Top 3 加盟商的贡献占比，用于观察头部集中度。</span>
+            </div>
+          </div>
+        </article>
+      </section>
+    </section>
+  );
+}
+
 export function App() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -855,6 +969,8 @@ export function App() {
             maxContribution={maxContribution}
           />
         ) : null}
+
+        {activeView === "franchise" ? <FranchiseView data={data} maxContribution={maxContribution} /> : null}
 
         {activeView === "import" ? <ImportView data={data} /> : null}
       </section>
