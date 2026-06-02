@@ -33,6 +33,25 @@ class ImportJobResponse(BaseModel):
     message: str | None = None
 
 
+class ImportValidationResult(BaseModel):
+    rule_code: str
+    metric_code: str
+    expected_value: float | None = None
+    actual_value: float | None = None
+    diff_value: float | None = None
+    tolerance: float | None = None
+    passed: bool
+    severity: str
+    message: str | None = None
+
+
+class ImportValidationResponse(BaseModel):
+    job_id: int
+    passed: int
+    failed: int
+    results: list[ImportValidationResult]
+
+
 class ContributionHeatmapCell(BaseModel):
     destination_province: str
     weight_band: str

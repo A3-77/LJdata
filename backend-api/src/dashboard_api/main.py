@@ -4,8 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .db import get_contribution_heatmap, get_franchise_rank, get_import_job, get_overview
-from .schemas import ContributionHeatmapResponse, ImportJobResponse, OverviewResponse, RankItem
+from .db import get_contribution_heatmap, get_franchise_rank, get_import_job, get_import_validation_results, get_overview
+from .schemas import ContributionHeatmapResponse, ImportJobResponse, ImportValidationResponse, OverviewResponse, RankItem
 
 app = FastAPI(title="Liaoning Franchise Contribution Dashboard API", version="0.1.0")
 
@@ -65,3 +65,8 @@ def contribution_flow_heatmap(
 @app.get("/api/import/jobs/{job_id}", response_model=ImportJobResponse)
 def import_job(job_id: int) -> ImportJobResponse:
     return get_import_job(job_id)
+
+
+@app.get("/api/import/jobs/{job_id}/validation-results", response_model=ImportValidationResponse)
+def import_validation_results(job_id: int) -> ImportValidationResponse:
+    return get_import_validation_results(job_id)

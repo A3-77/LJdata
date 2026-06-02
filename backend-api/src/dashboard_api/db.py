@@ -6,7 +6,15 @@ from typing import Any
 from fastapi import HTTPException
 
 from .config import settings
-from .schemas import ContributionHeatmapCell, ContributionHeatmapResponse, ImportJobResponse, OverviewResponse, RankItem
+from .schemas import (
+    ContributionHeatmapCell,
+    ContributionHeatmapResponse,
+    ImportJobResponse,
+    ImportValidationResponse,
+    ImportValidationResult,
+    OverviewResponse,
+    RankItem,
+)
 
 RANK_METRICS = {
     "total_contribution": "total_contribution",
@@ -251,4 +259,45 @@ def get_import_job(job_id: int) -> ImportJobResponse:
         status=str(row["status"]),
         progress=int(row["progress"]),
         message=row["message"],
+    )
+
+
+def get_import_validation_results(job_id: int) -> ImportValidationResponse:
+    with _connect() as conn:
+        job_exists = conn.execute("select 1 from import_job where id = %s", (job_id,)).fetchone()
+        if not job_exists:
+            raise HTTPException(status_code=404, detail="import job not found")
+
+        rows = conn.execute(
+            """
+            select
+              rule_code, metric_code, expected_value, actual_value, diff_value,
+              tolerance, passed, severity, message
+            from import_validation_result
+            where job_id = %s
+            order by passed asc, severity desc, metric_code
+            """,
+            (job_id,),
+        ).fetchall()
+
+    results = [
+        ImportValidationResult(
+            rule_code=str(row["rule_code"]),
+            metric_code=str(row["metric_code"]),
+            expected_value=None if row["expected_value"] is None else _as_float(row["expected_value"]),
+            actual_value=None if row["actual_value"] is None else _as_float(row["actual_value"]),
+            diff_value=None if row["diff_value"] is None else _as_float(row["diff_value"]),
+            tolerance=None if row["tolerance"] is None else _as_float(row["tolerance"]),
+            passed=bool(row["passed"]),
+            severity=str(row["severity"]),
+            message=row["message"],
+        )
+        for row in rows
+    ]
+    passed = sum(1 for result in results if result.passed)
+    return ImportValidationResponse(
+        job_id=job_id,
+        passed=passed,
+        failed=len(results) - passed,
+        results=results,
     )
