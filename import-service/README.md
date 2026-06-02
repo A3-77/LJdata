@@ -20,10 +20,13 @@ python -m import_service.cli extract contribution-flow "C:\path\to\file.xlsx" --
 Load summary rows into PostgreSQL:
 
 ```powershell
+python -m import_service.cli load-workbook "C:\path\to\file.xlsx" --database-url $env:DATABASE_URL --replace-period
 python -m import_service.cli load-summary "C:\path\to\file.xlsx" --database-url $env:DATABASE_URL --replace-period
 python -m import_service.cli load-contribution-flow "C:\path\to\file.xlsx" --database-url $env:DATABASE_URL --scope region --replace-period
 python -m import_service.cli load-contribution-flow "C:\path\to\file.xlsx" --database-url $env:DATABASE_URL --scope franchise --replace-period
 ```
+
+Use `load-workbook` for normal imports. It creates `source_file`, records one `import_job`, refreshes `source_sheet`, and assigns `file_id` to loaded facts.
 
 Current scope:
 
@@ -35,9 +38,9 @@ Current scope:
 - Unpivot `加盟商贡献`.
 - Load summary rows into PostgreSQL when dependencies and database are available.
 - Load contribution flow rows into PostgreSQL when dependencies and database are available.
+- Persist `source_file`, `source_sheet`, and `import_job` for supported workbook imports.
 - Prepare for full PostgreSQL import.
 
 Next scope:
 
-- Persist source_file and import_job.
 - Generate validation reports.

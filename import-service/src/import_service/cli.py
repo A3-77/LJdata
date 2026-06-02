@@ -6,7 +6,13 @@ import sys
 import warnings
 from pathlib import Path
 
-from .db import load_contribution_flow_rows, load_franchise_month_rows, load_site_month_rows
+from .db import (
+    create_import_job,
+    finish_import_job,
+    load_contribution_flow_rows,
+    load_franchise_month_rows,
+    load_site_month_rows,
+)
 from .workbook import inspect_workbook, parse_contribution_flow_rows, parse_franchise_month_rows, parse_site_month_rows
 
 
@@ -47,13 +53,23 @@ def main() -> None:
     load_parser.add_argument("--database-url", required=True)
     load_parser.add_argument("--region-code", default="LN")
     load_parser.add_argument("--region-name", default="辽宁区域")
+    load_parser.add_argument("--template-code", default="franchise_contribution_v1")
     load_parser.add_argument("--replace-period", action="store_true")
+
+    load_workbook_parser = subparsers.add_parser("load-workbook", help="Load all currently supported workbook sheets into PostgreSQL")
+    load_workbook_parser.add_argument("xlsx", type=Path)
+    load_workbook_parser.add_argument("--database-url", required=True)
+    load_workbook_parser.add_argument("--region-code", default="LN")
+    load_workbook_parser.add_argument("--region-name", default="辽宁区域")
+    load_workbook_parser.add_argument("--template-code", default="franchise_contribution_v1")
+    load_workbook_parser.add_argument("--replace-period", action="store_true")
 
     load_flow_parser = subparsers.add_parser("load-contribution-flow", help="Load unpivoted contribution flow into PostgreSQL")
     load_flow_parser.add_argument("xlsx", type=Path)
     load_flow_parser.add_argument("--database-url", required=True)
     load_flow_parser.add_argument("--scope", choices=["region", "franchise"], required=True)
     load_flow_parser.add_argument("--region-code", default="LN")
+    load_flow_parser.add_argument("--template-code", default="franchise_contribution_v1")
     load_flow_parser.add_argument("--replace-period", action="store_true")
 
     args = parser.parse_args()
@@ -88,32 +104,190 @@ def main() -> None:
     if args.command == "load-summary":
         franchise_rows = parse_franchise_month_rows(args.xlsx)
         site_rows = parse_site_month_rows(args.xlsx)
-        franchise_count = load_franchise_month_rows(
+        period_month = franchise_rows[0].period_month if franchise_rows else ""
+        inspection = inspect_workbook(args.xlsx)
+        file_id, job_id = create_import_job(
             args.database_url,
-            franchise_rows,
+            workbook_path=args.xlsx,
+            inspection=inspection,
+            period_month=period_month,
             region_code=args.region_code,
-            region_name=args.region_name,
-            replace_period=args.replace_period,
+            template_code=args.template_code,
         )
-        site_count = load_site_month_rows(
+        try:
+            franchise_count = load_franchise_month_rows(
+                args.database_url,
+                franchise_rows,
+                region_code=args.region_code,
+                region_name=args.region_name,
+                replace_period=args.replace_period,
+                file_id=file_id,
+            )
+            site_count = load_site_month_rows(
+                args.database_url,
+                site_rows,
+                region_code=args.region_code,
+                region_name=args.region_name,
+                replace_period=args.replace_period,
+                file_id=file_id,
+            )
+        except Exception as exc:
+            finish_import_job(
+                args.database_url,
+                file_id=file_id,
+                job_id=job_id,
+                status="failed",
+                progress=100,
+                message=str(exc),
+            )
+            raise
+        finish_import_job(
             args.database_url,
-            site_rows,
-            region_code=args.region_code,
-            region_name=args.region_name,
-            replace_period=args.replace_period,
+            file_id=file_id,
+            job_id=job_id,
+            status="completed",
+            progress=100,
+            message=f"Loaded {len(franchise_rows)} franchise rows and {len(site_rows)} site rows",
         )
-        print(json.dumps({"franchise_rows": franchise_count, "site_rows": site_count}, ensure_ascii=False, indent=2))
+        print(
+            json.dumps(
+                {"file_id": file_id, "job_id": job_id, "franchise_rows": franchise_count, "site_rows": site_count},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return
+
+    if args.command == "load-workbook":
+        franchise_rows = parse_franchise_month_rows(args.xlsx)
+        site_rows = parse_site_month_rows(args.xlsx)
+        region_flow_rows = parse_contribution_flow_rows(args.xlsx, scope_type="region", region_code=args.region_code)
+        franchise_flow_rows = parse_contribution_flow_rows(args.xlsx, scope_type="franchise", region_code=args.region_code)
+        period_month = franchise_rows[0].period_month if franchise_rows else ""
+        inspection = inspect_workbook(args.xlsx)
+        file_id, job_id = create_import_job(
+            args.database_url,
+            workbook_path=args.xlsx,
+            inspection=inspection,
+            period_month=period_month,
+            region_code=args.region_code,
+            template_code=args.template_code,
+        )
+        try:
+            franchise_count = load_franchise_month_rows(
+                args.database_url,
+                franchise_rows,
+                region_code=args.region_code,
+                region_name=args.region_name,
+                replace_period=args.replace_period,
+                file_id=file_id,
+            )
+            site_count = load_site_month_rows(
+                args.database_url,
+                site_rows,
+                region_code=args.region_code,
+                region_name=args.region_name,
+                replace_period=args.replace_period,
+                file_id=file_id,
+            )
+            region_flow_count = load_contribution_flow_rows(
+                args.database_url,
+                region_flow_rows,
+                region_code=args.region_code,
+                region_name=args.region_name,
+                replace_period=args.replace_period,
+                file_id=file_id,
+            )
+            franchise_flow_count = load_contribution_flow_rows(
+                args.database_url,
+                franchise_flow_rows,
+                region_code=args.region_code,
+                region_name=args.region_name,
+                replace_period=args.replace_period,
+                file_id=file_id,
+            )
+        except Exception as exc:
+            finish_import_job(
+                args.database_url,
+                file_id=file_id,
+                job_id=job_id,
+                status="failed",
+                progress=100,
+                message=str(exc),
+            )
+            raise
+        finish_import_job(
+            args.database_url,
+            file_id=file_id,
+            job_id=job_id,
+            status="completed",
+            progress=100,
+            message=(
+                f"Loaded {franchise_count} franchise rows, {site_count} site rows, "
+                f"{region_flow_count} region flow rows, and {franchise_flow_count} franchise flow rows"
+            ),
+        )
+        print(
+            json.dumps(
+                {
+                    "file_id": file_id,
+                    "job_id": job_id,
+                    "franchise_rows": franchise_count,
+                    "site_rows": site_count,
+                    "region_contribution_flow_rows": region_flow_count,
+                    "franchise_contribution_flow_rows": franchise_flow_count,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return
 
     if args.command == "load-contribution-flow":
         rows = parse_contribution_flow_rows(args.xlsx, scope_type=args.scope, region_code=args.region_code)
-        count = load_contribution_flow_rows(
+        period_month = rows[0].period_month if rows else ""
+        inspection = inspect_workbook(args.xlsx)
+        file_id, job_id = create_import_job(
             args.database_url,
-            rows,
+            workbook_path=args.xlsx,
+            inspection=inspection,
+            period_month=period_month,
             region_code=args.region_code,
-            replace_period=args.replace_period,
+            template_code=args.template_code,
         )
-        print(json.dumps({"contribution_flow_rows": count, "scope": args.scope}, ensure_ascii=False, indent=2))
+        try:
+            count = load_contribution_flow_rows(
+                args.database_url,
+                rows,
+                region_code=args.region_code,
+                replace_period=args.replace_period,
+                file_id=file_id,
+            )
+        except Exception as exc:
+            finish_import_job(
+                args.database_url,
+                file_id=file_id,
+                job_id=job_id,
+                status="failed",
+                progress=100,
+                message=str(exc),
+            )
+            raise
+        finish_import_job(
+            args.database_url,
+            file_id=file_id,
+            job_id=job_id,
+            status="completed",
+            progress=100,
+            message=f"Loaded {count} contribution flow rows for {args.scope}",
+        )
+        print(
+            json.dumps(
+                {"file_id": file_id, "job_id": job_id, "contribution_flow_rows": count, "scope": args.scope},
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
         return
 
 

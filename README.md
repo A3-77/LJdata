@@ -40,19 +40,19 @@ outputs/
 ## 推荐下一步
 
 1. 在安装 Docker/PostgreSQL 的环境做真实入库回归。
-2. 为前端加入 ECharts 热力图、排行图和贡献拆解图。
-3. 持久化 `source_file` 与 `import_job`，打通上传导入任务。
-4. 增加校验报告与异常明细。
-5. 为 Cloudflare Pages/Workers/R2/Queues 补部署配置。
+2. 增加校验报告与异常明细。
+3. 为 Cloudflare Pages/Workers/R2/Queues 补部署配置。
+4. 将 Cloudflare Worker 上传任务接入 `load-workbook`。
+5. 为前端补更多图表页面和下钻筛选。
 
 ## 当前状态
 
 已创建 MVP 工程骨架：
 
 - `database/`：PostgreSQL 建表和种子数据。
-- `import-service/`：Python Excel 检查、抽取、入库 CLI。
+- `import-service/`：Python Excel 检查、抽取、source/import job 记录、入库 CLI。
 - `backend-api/`：FastAPI 查询接口，已对接 PostgreSQL。
-- `frontend/`：React/Vite 看板，已从 API 拉取总览、Top/Bottom 排行。
+- `frontend/`：React/Vite 看板，已从 API 拉取总览、Top/Bottom 排行，并渲染排行图和目的省份/公斤段热力图。
 - `cloudflare/`：Workers、R2、Queues 入口骨架。
 
 启动说明见：

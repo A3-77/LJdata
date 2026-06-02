@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterable
+from pathlib import Path
 
-from .models import ContributionFlowRow, FranchiseMonthRow, SiteMonthRow
+from .models import ContributionFlowRow, FranchiseMonthRow, SiteMonthRow, WorkbookInspection
 
 WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7", "8", "9", "10.3", "＞10.3"]
 
@@ -85,6 +87,118 @@ def ensure_weight_bands(cursor) -> None:
         )
 
 
+def file_sha256(path: str | Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def create_import_job(
+    database_url: str,
+    *,
+    workbook_path: str | Path,
+    inspection: WorkbookInspection,
+    period_month: str,
+    region_code: str = "LN",
+    template_code: str = "franchise_contribution_v1",
+) -> tuple[int, int]:
+    psycopg = _require_psycopg()
+    source = Path(workbook_path)
+    file_hash = file_sha256(source)
+
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                insert into source_file (
+                  file_name, file_hash, file_path, region_code, period_month,
+                  template_code, import_status
+                )
+                values (%s, %s, %s, %s, %s, %s, 'running')
+                on conflict (file_hash) do update
+                set file_name = excluded.file_name,
+                    file_path = excluded.file_path,
+                    region_code = excluded.region_code,
+                    period_month = excluded.period_month,
+                    template_code = excluded.template_code,
+                    import_status = 'running'
+                returning id
+                """,
+                (source.name, file_hash, str(source), region_code, period_month, template_code),
+            )
+            file_id = int(cursor.fetchone()[0])
+
+            cursor.execute("delete from source_sheet where file_id = %s", (file_id,))
+            for sheet in inspection.sheets:
+                cursor.execute(
+                    """
+                    insert into source_sheet (
+                      file_id, sheet_name, max_row, max_col,
+                      header_start_row, header_end_row, data_start_row, total_row
+                    )
+                    values (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        file_id,
+                        sheet.name,
+                        sheet.max_row,
+                        sheet.max_col,
+                        sheet.header_start_row,
+                        sheet.header_end_row,
+                        sheet.data_start_row,
+                        sheet.total_row,
+                    ),
+                )
+
+            cursor.execute(
+                """
+                insert into import_job(file_id, status, progress, started_at, message)
+                values (%s, 'running', 5, now(), 'Import started')
+                returning id
+                """,
+                (file_id,),
+            )
+            job_id = int(cursor.fetchone()[0])
+        conn.commit()
+    return file_id, job_id
+
+
+def finish_import_job(
+    database_url: str,
+    *,
+    file_id: int,
+    job_id: int,
+    status: str,
+    progress: int,
+    message: str,
+) -> None:
+    psycopg = _require_psycopg()
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                update import_job
+                set status = %s,
+                    progress = %s,
+                    finished_at = now(),
+                    message = %s
+                where id = %s
+                """,
+                (status, progress, message, job_id),
+            )
+            cursor.execute(
+                """
+                update source_file
+                set import_status = %s
+                where id = %s
+                """,
+                (status, file_id),
+            )
+        conn.commit()
+
+
 def load_franchise_month_rows(
     database_url: str,
     rows: Iterable[FranchiseMonthRow],
@@ -92,6 +206,7 @@ def load_franchise_month_rows(
     region_code: str = "LN",
     region_name: str = "辽宁区域",
     replace_period: bool = False,
+    file_id: int | None = None,
 ) -> int:
     psycopg = _require_psycopg()
     rows = list(rows)
@@ -116,7 +231,7 @@ def load_franchise_month_rows(
                 cursor.execute(
                     """
                     insert into fact_franchise_month (
-                      period_month, region_code, franchise_id, franchise_name,
+                      file_id, period_month, region_code, franchise_id, franchise_name,
                       daily_over_5000_flag, outbound_tickets, outbound_weight, outbound_avg_weight,
                       waybill_fee, transfer_fee, warehouse_fee, operation_fee, dispatch_fee,
                       one_price_rebate, outbound_contribution, outbound_unit_contribution,
@@ -126,7 +241,7 @@ def load_franchise_month_rows(
                       inbound_pass_contribution
                     )
                     values (
-                      %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s,
                       %s, %s, %s, %s,
                       %s, %s, %s, %s, %s,
                       %s, %s, %s,
@@ -137,6 +252,7 @@ def load_franchise_month_rows(
                     )
                     """,
                     (
+                        file_id,
                         row.period_month,
                         region_code,
                         franchise_id,
@@ -176,6 +292,7 @@ def load_site_month_rows(
     region_code: str = "LN",
     region_name: str = "辽宁区域",
     replace_period: bool = False,
+    file_id: int | None = None,
 ) -> int:
     psycopg = _require_psycopg()
     rows = list(rows)
@@ -201,14 +318,14 @@ def load_site_month_rows(
                 cursor.execute(
                     """
                     insert into fact_site_month (
-                      period_month, region_code, franchise_id, franchise_name,
+                      file_id, period_month, region_code, franchise_id, franchise_name,
                       site_id, site_name, site_status, daily_over_5000_flag,
                       outbound_tickets, outbound_weight, outbound_contribution,
                       inbound_signed_tickets, inbound_contribution, deduction_total,
                       total_contribution
                     )
                     values (
-                      %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s,
                       %s, %s, %s, %s,
                       %s, %s, %s,
                       %s, %s, %s,
@@ -216,6 +333,7 @@ def load_site_month_rows(
                     )
                     """,
                     (
+                        file_id,
                         row.period_month,
                         region_code,
                         franchise_id,
@@ -244,6 +362,7 @@ def load_contribution_flow_rows(
     region_code: str = "LN",
     region_name: str = "辽宁区域",
     replace_period: bool = False,
+    file_id: int | None = None,
 ) -> int:
     psycopg = _require_psycopg()
     rows = list(rows)
@@ -273,14 +392,14 @@ def load_contribution_flow_rows(
                 cursor.execute(
                     """
                     insert into fact_contribution_flow (
-                      period_month, scope_type, region_code, franchise_id, franchise_name,
+                      file_id, period_month, scope_type, region_code, franchise_id, franchise_name,
                       destination_province, weight_band, ticket_count, ticket_share,
                       weight_total, four_fee_total, settlement_price, dispatch_fee,
                       contribution_total, unit_four_fee, unit_settlement_price,
                       unit_dispatch_fee, unit_contribution, kg_contribution
                     )
                     values (
-                      %s, %s, %s, %s, %s,
+                      %s, %s, %s, %s, %s, %s,
                       %s, %s, %s, %s,
                       %s, %s, %s, %s,
                       %s, %s, %s,
@@ -288,6 +407,7 @@ def load_contribution_flow_rows(
                     )
                     """,
                     (
+                        file_id,
                         row.period_month,
                         row.scope_type,
                         row.region_code or region_code,
