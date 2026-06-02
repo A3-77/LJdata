@@ -5,6 +5,7 @@ FastAPI service for dashboard queries and import status.
 ## Run locally
 
 ```powershell
+$env:DATABASE_URL = "postgresql://dashboard:dashboard@localhost:5432/dashboard"
 $env:PYTHONPATH = "src"
 uvicorn dashboard_api.main:app --reload --port 8000
 ```
@@ -18,4 +19,4 @@ GET /api/dashboard/franchises/rank
 GET /api/import/jobs/{job_id}
 ```
 
-Current responses use verified 202604 sample values. Replace with PostgreSQL queries after migrations are applied.
+Dashboard responses query PostgreSQL tables populated by `import-service`.

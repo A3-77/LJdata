@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class OverviewResponse(BaseModel):
@@ -23,7 +23,7 @@ class RankItem(BaseModel):
     outbound_contribution: float | None = None
     inbound_contribution: float | None = None
     deduction_total: float | None = None
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list)
 
 
 class ImportJobResponse(BaseModel):
@@ -31,4 +31,3 @@ class ImportJobResponse(BaseModel):
     status: str
     progress: int
     message: str | None = None
-

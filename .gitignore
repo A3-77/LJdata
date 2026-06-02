@@ -4,6 +4,7 @@ node_modules/
 venv/
 __pycache__/
 *.pyc
+*.egg-info/
 
 # Build outputs
 dist/
@@ -40,4 +41,3 @@ Thumbs.db
 # Cloudflare local state
 .wrangler/
 .dev.vars
-
