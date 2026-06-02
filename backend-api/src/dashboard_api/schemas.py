@@ -65,6 +65,21 @@ class ImportValidationResponse(BaseModel):
     results: list[ImportValidationResult]
 
 
+class ImportErrorItem(BaseModel):
+    severity: str
+    sheet_name: str | None = None
+    row_number: int | None = None
+    column_name: str | None = None
+    error_code: str
+    error_message: str
+
+
+class ImportErrorResponse(BaseModel):
+    job_id: int
+    error_count: int
+    errors: list[ImportErrorItem]
+
+
 class ContributionHeatmapCell(BaseModel):
     destination_province: str
     weight_band: str

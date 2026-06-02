@@ -42,6 +42,8 @@ Use `load-workbook` for normal imports. It creates `source_file`, records one `i
 
 `source_sheet.standard_sheet_code` is populated from the active template profile. Add new workbook variants by adding a profile in `src/import_service/templates.py`, then pass its `--template-code`.
 
+Required sheet checks and failed reconciliation rules are persisted to `import_error`. If blocking errors are found, the import job is marked `failed` before fact tables are loaded.
+
 Current scope:
 
 - Inspect sheet structure.
@@ -55,8 +57,9 @@ Current scope:
 - Load contribution flow rows into PostgreSQL when dependencies and database are available.
 - Persist `source_file`, `source_sheet`, and `import_job` for supported workbook imports.
 - Generate summary total validation reports.
+- Persist import errors for missing required sheets, failed reconciliation rules, and runtime failures.
 - Prepare for additional workbook template profiles.
 
 Next scope:
 
-- Persist row-level import errors.
+- Persist row-level field parsing errors for supported fact extractors.

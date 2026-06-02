@@ -36,6 +36,7 @@ export type DashboardData = {
   heatmap: ContributionHeatmap;
   importJob: ImportJob | null;
   importValidation: ImportValidationResponse | null;
+  importErrors: ImportErrorResponse | null;
 };
 
 export type ContributionHeatmapCell = {
@@ -80,6 +81,21 @@ export type ImportValidationResponse = {
   passed: number;
   failed: number;
   results: ImportValidationResult[];
+};
+
+export type ImportErrorItem = {
+  severity: string;
+  sheet_name: string | null;
+  row_number: number | null;
+  column_name: string | null;
+  error_code: string;
+  error_message: string;
+};
+
+export type ImportErrorResponse = {
+  job_id: number;
+  error_count: number;
+  errors: ImportErrorItem[];
 };
 
 export type ViewKey = "overview" | "franchise" | "site" | "flow" | "deduction" | "import";

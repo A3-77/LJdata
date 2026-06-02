@@ -9,6 +9,8 @@ from .config import settings
 from .schemas import (
     ContributionHeatmapCell,
     ContributionHeatmapResponse,
+    ImportErrorItem,
+    ImportErrorResponse,
     ImportJobResponse,
     ImportValidationResponse,
     ImportValidationResult,
@@ -362,3 +364,41 @@ def get_import_validation_results(job_id: int) -> ImportValidationResponse:
         failed=len(results) - passed,
         results=results,
     )
+
+
+def get_import_errors(job_id: int) -> ImportErrorResponse:
+    with _connect() as conn:
+        job_exists = conn.execute("select 1 from import_job where id = %s", (job_id,)).fetchone()
+        if not job_exists:
+            raise HTTPException(status_code=404, detail="import job not found")
+
+        rows = conn.execute(
+            """
+            select severity, sheet_name, row_number, column_name, error_code, error_message
+            from import_error
+            where job_id = %s
+            order by
+              case severity
+                when 'error' then 1
+                when 'warning' then 2
+                else 3
+              end,
+              sheet_name nulls last,
+              row_number nulls last,
+              error_code
+            """,
+            (job_id,),
+        ).fetchall()
+
+    errors = [
+        ImportErrorItem(
+            severity=str(row["severity"]),
+            sheet_name=row["sheet_name"],
+            row_number=row["row_number"],
+            column_name=row["column_name"],
+            error_code=str(row["error_code"]),
+            error_message=str(row["error_message"]),
+        )
+        for row in rows
+    ]
+    return ImportErrorResponse(job_id=job_id, error_count=len(errors), errors=errors)

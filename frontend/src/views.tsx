@@ -111,6 +111,7 @@ export function OverviewView({
 export function ImportView({ data }: { data: DashboardData | null }) {
   const job = data?.importJob;
   const validation = data?.importValidation;
+  const errors = data?.importErrors;
   const totalRules = (validation?.passed ?? 0) + (validation?.failed ?? 0);
   const passRate = totalRules ? percent(validation?.passed ?? 0, totalRules) : 0;
 
@@ -150,9 +151,49 @@ export function ImportView({ data }: { data: DashboardData | null }) {
           <div className="validation-counts">
             <span className="pass">通过 {validation?.passed ?? 0}</span>
             <span className={validation?.failed ? "fail" : ""}>失败 {validation?.failed ?? 0}</span>
+            <span className={errors?.error_count ? "fail" : ""}>错误 {errors?.error_count ?? 0}</span>
           </div>
         </article>
       </section>
+
+      <article className="panel wide">
+        <div className="panel-head">
+          <h2>导入错误</h2>
+          <span>结构、字段、校验与运行错误</span>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>级别</th>
+              <th>Sheet</th>
+              <th>行</th>
+              <th>列/指标</th>
+              <th>错误码</th>
+              <th>说明</th>
+            </tr>
+          </thead>
+          <tbody>
+            {errors?.errors.length ? (
+              errors.errors.map((error, index) => (
+                <tr key={`${error.error_code}-${error.sheet_name ?? "job"}-${error.row_number ?? index}`}>
+                  <td>
+                    <span className={error.severity === "error" ? "result-fail" : "result-pass"}>
+                      {error.severity}
+                    </span>
+                  </td>
+                  <td>{error.sheet_name ?? "-"}</td>
+                  <td>{error.row_number ?? "-"}</td>
+                  <td>{error.column_name ?? "-"}</td>
+                  <td>{error.error_code}</td>
+                  <td>{error.error_message}</td>
+                </tr>
+              ))
+            ) : (
+              <EmptyRows colSpan={6} />
+            )}
+          </tbody>
+        </table>
+      </article>
 
       <article className="panel wide">
         <div className="panel-head">

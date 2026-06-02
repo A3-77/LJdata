@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from .models import FranchiseMonthRow, OverviewCheck, SiteMonthRow, ValidationResult
+from .models import FranchiseMonthRow, ImportErrorRow, OverviewCheck, SiteMonthRow, ValidationResult
+from .templates import get_template_profile
 from .workbook import inspect_workbook, parse_franchise_month_rows, parse_site_month_rows
 
 SUMMARY_METRICS = {
@@ -68,6 +69,48 @@ def validate_summary_totals(
         _result("summary_total_reconciliation", metric_code, expected.get(metric_code), actual, tolerance)
         for metric_code, actual in actuals.items()
     ]
+
+
+def validate_required_sheets(path: str, *, template_code: str = "franchise_contribution_v1") -> list[ImportErrorRow]:
+    inspection = inspect_workbook(path, template_code=template_code)
+    present_codes = {sheet.standard_sheet_code for sheet in inspection.sheets if sheet.standard_sheet_code}
+    profile = get_template_profile(template_code)
+
+    errors: list[ImportErrorRow] = []
+    for rule in profile.sheet_rules:
+        if rule.required and rule.standard_sheet_code not in present_codes:
+            errors.append(
+                ImportErrorRow(
+                    severity="error",
+                    sheet_name=rule.sheet_name_pattern,
+                    row_number=None,
+                    column_name=None,
+                    error_code="required_sheet_missing",
+                    error_message=(
+                        f"Required sheet is missing for {rule.standard_sheet_code}: "
+                        f"expected pattern {rule.sheet_name_pattern}"
+                    ),
+                )
+            )
+    return errors
+
+
+def validation_results_to_import_errors(results: Iterable[ValidationResult]) -> list[ImportErrorRow]:
+    errors: list[ImportErrorRow] = []
+    for result in results:
+        if result.passed:
+            continue
+        errors.append(
+            ImportErrorRow(
+                severity=result.severity,
+                sheet_name=None,
+                row_number=None,
+                column_name=result.metric_code,
+                error_code=result.rule_code,
+                error_message=result.message,
+            )
+        )
+    return errors
 
 
 def validate_workbook(

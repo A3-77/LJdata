@@ -1,6 +1,15 @@
 import { API_BASE, DEMO_MODE, IMPORT_JOB_ID, PERIOD_MONTH, REGION_CODE } from "./constants";
 import { demoData } from "./demoData";
-import type { ContributionHeatmap, DashboardData, ImportJob, ImportValidationResponse, Overview, RankItem, SiteRankItem } from "./types";
+import type {
+  ContributionHeatmap,
+  DashboardData,
+  ImportErrorResponse,
+  ImportJob,
+  ImportValidationResponse,
+  Overview,
+  RankItem,
+  SiteRankItem,
+} from "./types";
 
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`);
@@ -31,9 +40,19 @@ export async function fetchDashboardData(): Promise<DashboardData> {
     fetchJson<SiteRankItem[]>(`/api/dashboard/sites/rank?${params}&metric=total_contribution&direction=desc&limit=12`),
     fetchJson<ContributionHeatmap>(`/api/dashboard/contribution-flow/heatmap?${params}&scope_type=region&metric=contribution_total&province_limit=12`),
   ]);
-  const [importJob, importValidation] = await Promise.all([
+  const [importJob, importValidation, importErrors] = await Promise.all([
     fetchOptionalJson<ImportJob>(`/api/import/jobs/${IMPORT_JOB_ID}`),
     fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${IMPORT_JOB_ID}/validation-results`),
+    fetchOptionalJson<ImportErrorResponse>(`/api/import/jobs/${IMPORT_JOB_ID}/errors`),
   ]);
-  return { overview: overviewData, topRank: topRankData, bottomRank: bottomRankData, siteRank, heatmap, importJob, importValidation };
+  return {
+    overview: overviewData,
+    topRank: topRankData,
+    bottomRank: bottomRankData,
+    siteRank,
+    heatmap,
+    importJob,
+    importValidation,
+    importErrors,
+  };
 }

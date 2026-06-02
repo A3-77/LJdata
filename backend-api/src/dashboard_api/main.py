@@ -7,6 +7,7 @@ from .config import settings
 from .db import (
     get_contribution_heatmap,
     get_franchise_rank,
+    get_import_errors,
     get_import_job,
     get_import_validation_results,
     get_overview,
@@ -14,6 +15,7 @@ from .db import (
 )
 from .schemas import (
     ContributionHeatmapResponse,
+    ImportErrorResponse,
     ImportJobResponse,
     ImportValidationResponse,
     OverviewResponse,
@@ -101,3 +103,8 @@ def import_job(job_id: int) -> ImportJobResponse:
 @app.get("/api/import/jobs/{job_id}/validation-results", response_model=ImportValidationResponse)
 def import_validation_results(job_id: int) -> ImportValidationResponse:
     return get_import_validation_results(job_id)
+
+
+@app.get("/api/import/jobs/{job_id}/errors", response_model=ImportErrorResponse)
+def import_errors(job_id: int) -> ImportErrorResponse:
+    return get_import_errors(job_id)

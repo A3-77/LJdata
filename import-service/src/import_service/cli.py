@@ -12,10 +12,28 @@ from .db import (
     load_contribution_flow_rows,
     load_franchise_month_rows,
     load_site_month_rows,
+    save_import_errors,
     save_validation_results,
 )
-from .validation import validate_summary_totals, validate_workbook
+from .models import ImportErrorRow
+from .validation import (
+    validate_required_sheets,
+    validate_summary_totals,
+    validate_workbook,
+    validation_results_to_import_errors,
+)
 from .workbook import inspect_workbook, parse_contribution_flow_rows, parse_franchise_month_rows, parse_site_month_rows
+
+
+def _exception_error(exc: Exception) -> ImportErrorRow:
+    return ImportErrorRow(
+        severity="error",
+        sheet_name=None,
+        row_number=None,
+        column_name=None,
+        error_code="import_runtime_error",
+        error_message=str(exc),
+    )
 
 
 def main() -> None:
@@ -134,7 +152,10 @@ def main() -> None:
         site_rows = parse_site_month_rows(args.xlsx, template_code=args.template_code)
         period_month = franchise_rows[0].period_month if franchise_rows else ""
         inspection = inspect_workbook(args.xlsx, template_code=args.template_code)
+        structure_errors = validate_required_sheets(args.xlsx, template_code=args.template_code)
         validation_results = validate_summary_totals(inspection.overview, franchise_rows, site_rows)
+        validation_errors = validation_results_to_import_errors(validation_results)
+        import_errors = structure_errors + validation_errors
         file_id, job_id = create_import_job(
             args.database_url,
             workbook_path=args.xlsx,
@@ -143,6 +164,31 @@ def main() -> None:
             region_code=args.region_code,
             template_code=args.template_code,
         )
+        save_validation_results(args.database_url, job_id=job_id, results=validation_results)
+        save_import_errors(args.database_url, job_id=job_id, errors=import_errors)
+        if import_errors:
+            finish_import_job(
+                args.database_url,
+                file_id=file_id,
+                job_id=job_id,
+                status="failed",
+                progress=100,
+                message=f"Import blocked by {len(import_errors)} validation or structure errors",
+            )
+            print(
+                json.dumps(
+                    {
+                        "file_id": file_id,
+                        "job_id": job_id,
+                        "status": "failed",
+                        "error_count": len(import_errors),
+                        "errors": [error.as_dict() for error in import_errors],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return
         try:
             franchise_count = load_franchise_month_rows(
                 args.database_url,
@@ -151,6 +197,7 @@ def main() -> None:
                 region_name=args.region_name,
                 replace_period=args.replace_period,
                 file_id=file_id,
+                template_code=args.template_code,
             )
             site_count = load_site_month_rows(
                 args.database_url,
@@ -159,9 +206,10 @@ def main() -> None:
                 region_name=args.region_name,
                 replace_period=args.replace_period,
                 file_id=file_id,
+                template_code=args.template_code,
             )
-            save_validation_results(args.database_url, job_id=job_id, results=validation_results)
         except Exception as exc:
+            save_import_errors(args.database_url, job_id=job_id, errors=[*import_errors, _exception_error(exc)])
             finish_import_job(
                 args.database_url,
                 file_id=file_id,
@@ -189,6 +237,7 @@ def main() -> None:
                     "site_rows": site_count,
                     "validation_passed": passed,
                     "validation_failed": len(validation_results) - passed,
+                    "error_count": len(import_errors),
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -213,7 +262,10 @@ def main() -> None:
         )
         period_month = franchise_rows[0].period_month if franchise_rows else ""
         inspection = inspect_workbook(args.xlsx, template_code=args.template_code)
+        structure_errors = validate_required_sheets(args.xlsx, template_code=args.template_code)
         validation_results = validate_summary_totals(inspection.overview, franchise_rows, site_rows)
+        validation_errors = validation_results_to_import_errors(validation_results)
+        import_errors = structure_errors + validation_errors
         file_id, job_id = create_import_job(
             args.database_url,
             workbook_path=args.xlsx,
@@ -222,6 +274,31 @@ def main() -> None:
             region_code=args.region_code,
             template_code=args.template_code,
         )
+        save_validation_results(args.database_url, job_id=job_id, results=validation_results)
+        save_import_errors(args.database_url, job_id=job_id, errors=import_errors)
+        if import_errors:
+            finish_import_job(
+                args.database_url,
+                file_id=file_id,
+                job_id=job_id,
+                status="failed",
+                progress=100,
+                message=f"Import blocked by {len(import_errors)} validation or structure errors",
+            )
+            print(
+                json.dumps(
+                    {
+                        "file_id": file_id,
+                        "job_id": job_id,
+                        "status": "failed",
+                        "error_count": len(import_errors),
+                        "errors": [error.as_dict() for error in import_errors],
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return
         try:
             franchise_count = load_franchise_month_rows(
                 args.database_url,
@@ -230,6 +307,7 @@ def main() -> None:
                 region_name=args.region_name,
                 replace_period=args.replace_period,
                 file_id=file_id,
+                template_code=args.template_code,
             )
             site_count = load_site_month_rows(
                 args.database_url,
@@ -238,6 +316,7 @@ def main() -> None:
                 region_name=args.region_name,
                 replace_period=args.replace_period,
                 file_id=file_id,
+                template_code=args.template_code,
             )
             region_flow_count = load_contribution_flow_rows(
                 args.database_url,
@@ -246,6 +325,7 @@ def main() -> None:
                 region_name=args.region_name,
                 replace_period=args.replace_period,
                 file_id=file_id,
+                template_code=args.template_code,
             )
             franchise_flow_count = load_contribution_flow_rows(
                 args.database_url,
@@ -254,9 +334,10 @@ def main() -> None:
                 region_name=args.region_name,
                 replace_period=args.replace_period,
                 file_id=file_id,
+                template_code=args.template_code,
             )
-            save_validation_results(args.database_url, job_id=job_id, results=validation_results)
         except Exception as exc:
+            save_import_errors(args.database_url, job_id=job_id, errors=[*import_errors, _exception_error(exc)])
             finish_import_job(
                 args.database_url,
                 file_id=file_id,
@@ -289,6 +370,7 @@ def main() -> None:
                     "franchise_contribution_flow_rows": franchise_flow_count,
                     "validation_passed": passed,
                     "validation_failed": len(validation_results) - passed,
+                    "error_count": len(import_errors),
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -320,8 +402,10 @@ def main() -> None:
                 region_code=args.region_code,
                 replace_period=args.replace_period,
                 file_id=file_id,
+                template_code=args.template_code,
             )
         except Exception as exc:
+            save_import_errors(args.database_url, job_id=job_id, errors=[_exception_error(exc)])
             finish_import_job(
                 args.database_url,
                 file_id=file_id,

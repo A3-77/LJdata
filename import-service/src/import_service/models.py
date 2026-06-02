@@ -147,3 +147,16 @@ class ValidationResult:
 
     def as_dict(self) -> dict[str, Any]:
         return self.__dict__
+
+
+@dataclass(frozen=True)
+class ImportErrorRow:
+    severity: str
+    sheet_name: str | None
+    row_number: int | None
+    column_name: str | None
+    error_code: str
+    error_message: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return self.__dict__

@@ -4,9 +4,8 @@ import hashlib
 from collections.abc import Iterable
 from pathlib import Path
 
-from .models import ContributionFlowRow, FranchiseMonthRow, SiteMonthRow, ValidationResult, WorkbookInspection
-
-WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7", "8", "9", "10.3", "＞10.3"]
+from .models import ContributionFlowRow, FranchiseMonthRow, ImportErrorRow, SiteMonthRow, ValidationResult, WorkbookInspection
+from .templates import get_template_profile
 
 
 def _require_psycopg():
@@ -73,8 +72,9 @@ def upsert_site(cursor, site_name: str, franchise_id: int, status: str | None) -
     return int(cursor.fetchone()[0])
 
 
-def ensure_weight_bands(cursor) -> None:
-    for index, weight_band in enumerate(WEIGHT_BANDS, start=1):
+def ensure_weight_bands(cursor, *, template_code: str = "franchise_contribution_v1") -> None:
+    profile = get_template_profile(template_code)
+    for index, weight_band in enumerate(profile.weight_bands, start=1):
         cursor.execute(
             """
             insert into dim_weight_band(weight_band, sort_order, display_name)
@@ -232,6 +232,35 @@ def save_validation_results(database_url: str, *, job_id: int, results: Iterable
     return len(results)
 
 
+def save_import_errors(database_url: str, *, job_id: int, errors: Iterable[ImportErrorRow]) -> int:
+    psycopg = _require_psycopg()
+    errors = list(errors)
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("delete from import_error where job_id = %s", (job_id,))
+            for error in errors:
+                cursor.execute(
+                    """
+                    insert into import_error (
+                      job_id, severity, sheet_name, row_number, column_name,
+                      error_code, error_message
+                    )
+                    values (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        job_id,
+                        error.severity,
+                        error.sheet_name,
+                        error.row_number,
+                        error.column_name,
+                        error.error_code,
+                        error.error_message,
+                    ),
+                )
+        conn.commit()
+    return len(errors)
+
+
 def load_franchise_month_rows(
     database_url: str,
     rows: Iterable[FranchiseMonthRow],
@@ -240,6 +269,7 @@ def load_franchise_month_rows(
     region_name: str = "辽宁区域",
     replace_period: bool = False,
     file_id: int | None = None,
+    template_code: str = "franchise_contribution_v1",
 ) -> int:
     psycopg = _require_psycopg()
     rows = list(rows)
@@ -251,7 +281,7 @@ def load_franchise_month_rows(
         with conn.cursor() as cursor:
             ensure_region(cursor, region_code, region_name)
             ensure_month(cursor, period_month)
-            ensure_weight_bands(cursor)
+            ensure_weight_bands(cursor, template_code=template_code)
 
             if replace_period:
                 cursor.execute(
@@ -326,6 +356,7 @@ def load_site_month_rows(
     region_name: str = "辽宁区域",
     replace_period: bool = False,
     file_id: int | None = None,
+    template_code: str = "franchise_contribution_v1",
 ) -> int:
     psycopg = _require_psycopg()
     rows = list(rows)
@@ -337,7 +368,7 @@ def load_site_month_rows(
         with conn.cursor() as cursor:
             ensure_region(cursor, region_code, region_name)
             ensure_month(cursor, period_month)
-            ensure_weight_bands(cursor)
+            ensure_weight_bands(cursor, template_code=template_code)
 
             if replace_period:
                 cursor.execute(
@@ -396,6 +427,7 @@ def load_contribution_flow_rows(
     region_name: str = "辽宁区域",
     replace_period: bool = False,
     file_id: int | None = None,
+    template_code: str = "franchise_contribution_v1",
 ) -> int:
     psycopg = _require_psycopg()
     rows = list(rows)
@@ -409,7 +441,7 @@ def load_contribution_flow_rows(
         with conn.cursor() as cursor:
             ensure_region(cursor, region_code, region_name)
             ensure_month(cursor, period_month)
-            ensure_weight_bands(cursor)
+            ensure_weight_bands(cursor, template_code=template_code)
 
             if replace_period:
                 cursor.execute(

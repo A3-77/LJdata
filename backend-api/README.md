@@ -20,6 +20,7 @@ GET /api/dashboard/sites/rank
 GET /api/dashboard/contribution-flow/heatmap
 GET /api/import/jobs/{job_id}
 GET /api/import/jobs/{job_id}/validation-results
+GET /api/import/jobs/{job_id}/errors
 ```
 
 Dashboard responses query PostgreSQL tables populated by `import-service`.

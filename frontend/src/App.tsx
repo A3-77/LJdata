@@ -83,6 +83,20 @@ export function App() {
           </div>
         </header>
 
+        <nav className="mobile-nav" aria-label="看板导航">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              className={item.key === activeView ? "active" : ""}
+              disabled={!item.enabled}
+              onClick={() => setActiveView(item.key)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
         {error ? (
           <section className="notice error">
             <strong>数据加载失败</strong>

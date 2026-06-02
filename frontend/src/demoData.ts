@@ -283,4 +283,9 @@ export const demoData: DashboardData = {
       message: "源表汇总值与抽取结果一致",
     })),
   },
+  importErrors: {
+    job_id: 1,
+    error_count: 0,
+    errors: [],
+  },
 };

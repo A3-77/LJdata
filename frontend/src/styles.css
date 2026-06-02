@@ -163,6 +163,26 @@ h2 {
   justify-content: flex-end;
 }
 
+.mobile-nav {
+  display: none;
+  gap: 8px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+  padding-bottom: 4px;
+}
+
+.mobile-nav button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.mobile-nav button.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  color: #1f469f;
+  font-weight: 700;
+}
+
 .notice {
   display: flex;
   align-items: center;
@@ -581,6 +601,10 @@ th {
 
   .sidebar {
     display: none;
+  }
+
+  .mobile-nav {
+    display: flex;
   }
 
   .topbar {
