@@ -5,126 +5,22 @@ import type { EChartsType } from "echarts/core";
 import { BarChart, HeatmapChart } from "echarts/charts";
 import { GridComponent, TooltipComponent, VisualMapComponent } from "echarts/components";
 import { CanvasRenderer } from "echarts/renderers";
+import { API_BASE, DEMO_MODE, IMPORT_JOB_ID, METRIC_LABELS, NAV_ITEMS, PERIOD_MONTH, REGION_CODE, STATUS_LABELS, WEIGHT_BANDS } from "./constants";
+import { countWan, moneyWan, percent, plainNumber, signedMoneyWan } from "./format";
+import { sumHeatmapByProvince, sumHeatmapByWeightBand } from "./heatmapUtils";
+import type {
+  ContributionHeatmap,
+  ContributionHeatmapCell,
+  DashboardData,
+  ImportJob,
+  ImportValidationResponse,
+  Overview,
+  RankItem,
+  SiteRankItem,
+  ViewKey,
+} from "./types";
 
 echarts.use([BarChart, HeatmapChart, GridComponent, TooltipComponent, VisualMapComponent, CanvasRenderer]);
-
-type Overview = {
-  period_month: string;
-  region_code: string;
-  franchise_count: number;
-  site_count: number;
-  outbound_tickets: number;
-  outbound_weight: number;
-  inbound_signed_tickets: number;
-  outbound_contribution: number;
-  inbound_contribution: number;
-  total_contribution: number;
-  deduction_total: number;
-};
-
-type RankItem = {
-  name: string;
-  total_contribution: number;
-  outbound_contribution: number | null;
-  inbound_contribution: number | null;
-  deduction_total: number | null;
-  tags: string[];
-};
-
-type SiteRankItem = RankItem & {
-  franchise_name: string;
-  site_status: string | null;
-  outbound_tickets: number | null;
-  inbound_signed_tickets: number | null;
-};
-
-type DashboardData = {
-  overview: Overview;
-  topRank: RankItem[];
-  bottomRank: RankItem[];
-  siteRank: SiteRankItem[];
-  heatmap: ContributionHeatmap;
-  importJob: ImportJob | null;
-  importValidation: ImportValidationResponse | null;
-};
-
-type ContributionHeatmapCell = {
-  destination_province: string;
-  weight_band: string;
-  value: number;
-  ticket_count: number | null;
-  weight_total: number | null;
-};
-
-type ContributionHeatmap = {
-  period_month: string;
-  region_code: string;
-  scope_type: string;
-  metric: string;
-  provinces: string[];
-  weight_bands: string[];
-  cells: ContributionHeatmapCell[];
-};
-
-type ImportJob = {
-  job_id: number;
-  status: string;
-  progress: number;
-  message: string | null;
-};
-
-type ImportValidationResult = {
-  rule_code: string;
-  metric_code: string;
-  expected_value: number | null;
-  actual_value: number | null;
-  diff_value: number | null;
-  tolerance: number | null;
-  passed: boolean;
-  severity: string;
-  message: string | null;
-};
-
-type ImportValidationResponse = {
-  job_id: number;
-  passed: number;
-  failed: number;
-  results: ImportValidationResult[];
-};
-
-type ViewKey = "overview" | "franchise" | "site" | "flow" | "deduction" | "import";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
-const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
-const PERIOD_MONTH = "202604";
-const REGION_CODE = "LN";
-const IMPORT_JOB_ID = Number(import.meta.env.VITE_IMPORT_JOB_ID ?? "1");
-const WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7", "8", "9", "10.3", "＞10.3"];
-const NAV_ITEMS: { key: ViewKey; label: string; enabled: boolean }[] = [
-  { key: "overview", label: "经营总览", enabled: true },
-  { key: "franchise", label: "加盟商贡献", enabled: true },
-  { key: "site", label: "网点下钻", enabled: true },
-  { key: "flow", label: "目的省份与公斤段", enabled: true },
-  { key: "deduction", label: "扣款与补贴", enabled: true },
-  { key: "import", label: "数据导入", enabled: true },
-];
-const METRIC_LABELS: Record<string, string> = {
-  franchise_count: "加盟商数",
-  site_count: "网点数",
-  outbound_tickets: "出港票量",
-  outbound_weight: "出港重量",
-  inbound_signed_tickets: "进港签收量",
-  outbound_contribution: "出港总贡献",
-  inbound_contribution: "进港总贡献",
-  total_contribution: "总贡献",
-  deduction_total: "扣款小计",
-};
-const STATUS_LABELS: Record<string, string> = {
-  pending: "待处理",
-  running: "处理中",
-  completed: "已完成",
-  failed: "失败",
-};
 
 const DEMO_PROVINCES = ["广东", "浙江", "江苏", "山东", "河北", "吉林", "黑龙江", "北京", "上海", "内蒙古", "四川", "河南"];
 
@@ -444,72 +340,6 @@ async function fetchDashboardData(): Promise<DashboardData> {
     fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${IMPORT_JOB_ID}/validation-results`),
   ]);
   return { overview: overviewData, topRank: topRankData, bottomRank: bottomRankData, siteRank, heatmap, importJob, importValidation };
-}
-
-function moneyWan(value: number | null | undefined) {
-  const raw = value ?? 0;
-  return `${(raw / 10000).toLocaleString("zh-CN", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} 万`;
-}
-
-function countWan(value: number | null | undefined) {
-  const raw = value ?? 0;
-  return `${(raw / 10000).toLocaleString("zh-CN", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} 万`;
-}
-
-function plainNumber(value: number | null | undefined) {
-  if (value === null || value === undefined) {
-    return "-";
-  }
-  return value.toLocaleString("zh-CN", { maximumFractionDigits: 4 });
-}
-
-function signedMoneyWan(value: number | null | undefined) {
-  const raw = value ?? 0;
-  const sign = raw > 0 ? "+" : "";
-  return `${sign}${moneyWan(raw)}`;
-}
-
-function sumHeatmapByProvince(heatmap: ContributionHeatmap | null | undefined) {
-  const totals = new Map<string, { name: string; value: number; tickets: number; weight: number }>();
-  for (const cell of heatmap?.cells ?? []) {
-    const current = totals.get(cell.destination_province) ?? {
-      name: cell.destination_province,
-      value: 0,
-      tickets: 0,
-      weight: 0,
-    };
-    current.value += cell.value;
-    current.tickets += cell.ticket_count ?? 0;
-    current.weight += cell.weight_total ?? 0;
-    totals.set(cell.destination_province, current);
-  }
-  return [...totals.values()].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
-}
-
-function sumHeatmapByWeightBand(heatmap: ContributionHeatmap | null | undefined) {
-  const totals = new Map<string, { name: string; value: number; tickets: number; weight: number }>();
-  for (const cell of heatmap?.cells ?? []) {
-    const current = totals.get(cell.weight_band) ?? {
-      name: cell.weight_band,
-      value: 0,
-      tickets: 0,
-      weight: 0,
-    };
-    current.value += cell.value;
-    current.tickets += cell.ticket_count ?? 0;
-    current.weight += cell.weight_total ?? 0;
-    totals.set(cell.weight_band, current);
-  }
-  return WEIGHT_BANDS
-    .map((weightBand) => totals.get(weightBand))
-    .filter((item): item is { name: string; value: number; tickets: number; weight: number } => Boolean(item));
-}
-
-function percent(part: number, total: number) {
-  if (!Number.isFinite(part) || !Number.isFinite(total) || total === 0) {
-    return 0;
-  }
-  return part / total * 100;
 }
 
 function KpiCard(props: { label: string; value: string; tone?: "good" | "risk" | "neutral"; loading?: boolean }) {
