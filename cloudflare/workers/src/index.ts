@@ -7,22 +7,52 @@ type Env = {
   BACKEND_API_BASE_URL: string;
 };
 
+type UploadFile = {
+  name: string;
+  type?: string;
+  stream: () => ReadableStream;
+};
+
 const app = new Hono<{ Bindings: Env }>();
 
-app.get("/health", (c) => c.json({ status: "ok", runtime: "cloudflare-worker" }));
+function isUploadFile(value: unknown): value is UploadFile {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "name" in value &&
+    typeof value.name === "string" &&
+    "stream" in value &&
+    typeof value.stream === "function"
+  );
+}
 
-app.get("/api/dashboard/overview", async (c) => {
-  const url = new URL("/api/dashboard/overview", c.env.BACKEND_API_BASE_URL);
-  url.search = new URL(c.req.url).search;
-  const response = await fetch(url);
-  return new Response(response.body, response);
-});
+async function proxyBackend(request: Request, backendBaseUrl: string) {
+  const sourceUrl = new URL(request.url);
+  const targetUrl = new URL(sourceUrl.pathname, backendBaseUrl);
+  targetUrl.search = sourceUrl.search;
+
+  const headers = new Headers(request.headers);
+  headers.delete("host");
+
+  const response = await fetch(targetUrl, {
+    method: request.method,
+    headers,
+  });
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
+app.get("/health", (c) => c.json({ status: "ok", runtime: "cloudflare-worker" }));
 
 app.post("/api/import/files", async (c) => {
   const form = await c.req.formData();
   const file = form.get("file");
 
-  if (!(file instanceof File)) {
+  if (!isUploadFile(file)) {
     return c.json({ error: "file is required" }, 400);
   }
 
@@ -52,11 +82,6 @@ app.post("/api/import/files", async (c) => {
   });
 });
 
-app.get("/api/import/jobs/:jobId", async (c) => {
-  const url = new URL(`/api/import/jobs/${c.req.param("jobId")}`, c.env.BACKEND_API_BASE_URL);
-  const response = await fetch(url);
-  return new Response(response.body, response);
-});
+app.get("/api/*", (c) => proxyBackend(c.req.raw, c.env.BACKEND_API_BASE_URL));
 
 export default app;
-
