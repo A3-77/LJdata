@@ -118,6 +118,7 @@ export async function uploadImportFile(file: File): Promise<UploadImportResponse
   const formData = new FormData();
   formData.append("file", file);
   const params = new URLSearchParams({
+    period_month: PERIOD_MONTH,
     region_code: REGION_CODE,
     region_name: `${REGION_LABEL}区域`,
     template_code: TEMPLATE_CODE,
