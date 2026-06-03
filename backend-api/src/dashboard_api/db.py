@@ -83,6 +83,12 @@ def _connect():
         raise HTTPException(status_code=503, detail="database is unavailable") from exc
 
 
+def check_database() -> dict[str, str]:
+    with _connect() as conn:
+        conn.execute("select 1").fetchone()
+    return {"database": "ok"}
+
+
 def get_overview(period_month: str, region_code: str) -> OverviewResponse:
     sql = """
         select

@@ -33,6 +33,7 @@ For production, use a managed PostgreSQL URL, set `DASHBOARD_IMPORT_API_TOKEN`, 
 
 ```text
 GET /health
+GET /ready
 GET /api/dashboard/overview
 GET /api/dashboard/franchises/rank
 GET /api/dashboard/sites/rank
@@ -45,3 +46,5 @@ GET /api/import/jobs/{job_id}/errors
 ```
 
 Dashboard responses query PostgreSQL tables populated by `import-service`.
+
+Use `/health` for process liveness and `/ready` for deployment readiness. `/ready` checks the configured PostgreSQL connection.

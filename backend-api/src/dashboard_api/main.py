@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import (
+    check_database,
     get_contribution_heatmap,
     get_franchise_rank,
     get_import_errors,
@@ -42,6 +43,11 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/ready")
+def ready() -> dict[str, str]:
+    return {"status": "ready", **check_database()}
 
 
 def require_import_token(token: str | None) -> None:

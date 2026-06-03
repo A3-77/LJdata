@@ -98,6 +98,7 @@ Health check:
 
 ```text
 http://localhost:8000/health
+http://localhost:8000/ready
 ```
 
 Dashboard checks:
