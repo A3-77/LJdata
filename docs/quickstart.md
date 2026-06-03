@@ -1,5 +1,32 @@
 # Quickstart
 
+## 0. Recommended Scripts
+
+Start the local frontend and backend:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
+```
+
+This starts:
+
+```text
+Frontend: http://127.0.0.1:5173/
+Backend:  http://127.0.0.1:8000/health
+```
+
+After Docker Desktop is installed and running, initialize PostgreSQL and import the current workbook:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-postgres-docker.ps1
+```
+
+If you only want to initialize PostgreSQL without importing Excel:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-postgres-docker.ps1 -SkipImport
+```
+
 ## 1. Database
 
 Start local PostgreSQL:

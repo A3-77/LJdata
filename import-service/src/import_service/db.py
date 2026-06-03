@@ -79,8 +79,8 @@ def ensure_weight_bands(cursor, *, template_code: str = "franchise_contribution_
             """
             insert into dim_weight_band(weight_band, sort_order, display_name)
             values (%s, %s, %s)
-            on conflict (weight_band) do update
-            set sort_order = excluded.sort_order,
+            on conflict (sort_order) do update
+            set weight_band = excluded.weight_band,
                 display_name = excluded.display_name
             """,
             (weight_band, index, weight_band),
