@@ -10,7 +10,11 @@ bucket_name = "dashboard-source-files"
 binding = "IMPORT_QUEUE"
 queue = "dashboard-import-jobs"
 
+[[queues.consumers]]
+queue = "dashboard-import-jobs"
+max_batch_size = 1
+max_batch_timeout = 30
+
 [vars]
 REGION_CODE = "LN"
 BACKEND_API_BASE_URL = "http://localhost:8000"
-

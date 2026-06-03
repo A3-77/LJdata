@@ -44,6 +44,9 @@ Bindings are declared in `wrangler.toml`.
 The Worker keeps Excel upload handling at the edge:
 
 - `POST /api/import/files` stores the source workbook in R2 and sends an import job message to Queue.
+- Queue consumer reads the workbook back from R2 and calls the FastAPI `/api/import/files` runner with multipart upload.
 - `GET /api/*` proxies dashboard and import-status reads to `BACKEND_API_BASE_URL`.
 
 Set `BACKEND_API_BASE_URL` to the FastAPI service origin in production. Cloudflare Pages can either call the Worker as `VITE_API_BASE_URL`, or route `/api/*` to the Worker through Cloudflare routing.
+
+The Worker does not parse Excel. Python import remains in the backend service because Workers are not a suitable runtime for the current workbook parser and PostgreSQL load path.
