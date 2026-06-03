@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
@@ -42,6 +42,11 @@ app.add_middleware(
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+def require_import_token(token: str | None) -> None:
+    if settings.import_api_token and token != settings.import_api_token:
+        raise HTTPException(status_code=401, detail="invalid import token")
 
 
 @app.get("/api/dashboard/overview", response_model=OverviewResponse)
@@ -136,7 +141,9 @@ async def upload_import_file(
     region_name: str = settings.default_region_name,
     template_code: str = settings.default_template_code,
     replace_period: bool = True,
+    x_import_token: str | None = Header(default=None, alias="X-Import-Token"),
 ) -> UploadImportResponse:
+    require_import_token(x_import_token)
     workbook_path = await save_upload(file)
     return run_workbook_import(
         workbook_path,

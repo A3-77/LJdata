@@ -50,3 +50,5 @@ The Worker keeps Excel upload handling at the edge:
 Set `BACKEND_API_BASE_URL` to the FastAPI service origin in production. Cloudflare Pages can either call the Worker as `VITE_API_BASE_URL`, or route `/api/*` to the Worker through Cloudflare routing.
 
 The Worker does not parse Excel. Python import remains in the backend service because Workers are not a suitable runtime for the current workbook parser and PostgreSQL load path.
+
+For production, protect the backend upload runner with `DASHBOARD_IMPORT_API_TOKEN` and set the same value as a Worker secret named `IMPORT_API_TOKEN`. The public frontend should upload to the Worker, not directly to the backend import endpoint.

@@ -27,6 +27,7 @@ class Settings:
     default_region_code: str = os.getenv("DASHBOARD_DEFAULT_REGION_CODE", "LN")
     default_region_name: str = os.getenv("DASHBOARD_DEFAULT_REGION_NAME", "辽宁区域")
     default_template_code: str = os.getenv("DASHBOARD_DEFAULT_TEMPLATE_CODE", "franchise_contribution_v1")
+    import_api_token: str | None = os.getenv("DASHBOARD_IMPORT_API_TOKEN") or None
 
 
 settings = Settings()

@@ -5,6 +5,7 @@ type Env = {
   IMPORT_QUEUE: Queue<ImportQueueMessage>;
   REGION_CODE: string;
   BACKEND_API_BASE_URL: string;
+  IMPORT_API_TOKEN?: string;
 };
 
 type ImportQueueMessage = {
@@ -116,8 +117,14 @@ async function forwardQueuedImport(job: ImportQueueMessage, env: Env) {
   targetUrl.searchParams.set("template_code", job.template_code);
   targetUrl.searchParams.set("replace_period", "true");
 
+  const headers = new Headers();
+  if (env.IMPORT_API_TOKEN) {
+    headers.set("X-Import-Token", env.IMPORT_API_TOKEN);
+  }
+
   const response = await fetch(targetUrl, {
     method: "POST",
+    headers,
     body: form,
   });
 
