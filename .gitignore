@@ -25,6 +25,7 @@ logs/
 # Data and source files
 data/samples/*
 data/staging/*
+data/uploads/*
 !data/samples/.gitkeep
 !data/staging/.gitkeep
 *.xlsx

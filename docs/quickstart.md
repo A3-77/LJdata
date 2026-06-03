@@ -194,7 +194,33 @@ Build output directory: dist
 
 Set Pages environment variables from `frontend/.env.example`. In production, keep `VITE_DEMO_MODE=false`. Set `VITE_API_BASE_URL` only when the frontend calls a separate Worker origin; leave it empty when `/api/*` is routed to the Worker on the same host.
 
-## 6. Current MVP State
+## 6. Backend Container
+
+The Python backend is not deployed to Cloudflare Pages. Build it as a container from the repository root:
+
+```powershell
+docker build -f backend-api/Dockerfile -t liaoning-dashboard-backend .
+```
+
+Run it against local PostgreSQL:
+
+```powershell
+docker run --rm -p 8000:8000 `
+  -e DATABASE_URL="postgresql://dashboard:dashboard@host.docker.internal:5432/dashboard" `
+  liaoning-dashboard-backend
+```
+
+For production, deploy this container to a Python/container host and set:
+
+```text
+DATABASE_URL
+API_CORS_ORIGINS
+DASHBOARD_IMPORT_API_TOKEN
+DASHBOARD_UPLOAD_DIR
+DASHBOARD_IMPORT_SERVICE_SRC
+```
+
+## 7. Current MVP State
 
 Implemented:
 
