@@ -175,7 +175,34 @@ npm run dev
 
 Demo mode is only for UI inspection. It uses the validated 202604 overview totals and sample chart rows, while the normal mode still reads the real backend API.
 
-## 5. Cloudflare Worker
+## 5. Streamlit Quick Share
+
+The Streamlit entry point is for quick sharing and review. It does not require PostgreSQL. Users upload an Excel workbook in the browser, and the app parses KPI, validation, ranking, site samples, and province-weight heatmap in memory.
+
+Run locally from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+Open:
+
+```text
+http://localhost:8501
+```
+
+Deploy on Streamlit Community Cloud:
+
+```text
+Repository: A3-77/LJdata
+Branch: main
+Main file path: streamlit_app.py
+```
+
+No PostgreSQL secret is required for the current Streamlit quick-share version.
+
+## 6. Cloudflare Worker
 
 Run the Worker gateway:
 
@@ -195,7 +222,7 @@ Build output directory: dist
 
 Set Pages environment variables from `frontend/.env.example`. In production, keep `VITE_DEMO_MODE=false`. Set `VITE_API_BASE_URL` only when the frontend calls a separate Worker origin; leave it empty when `/api/*` is routed to the Worker on the same host.
 
-## 6. Backend Container
+## 7. Backend Container
 
 The Python backend is not deployed to Cloudflare Pages. Build it as a container from the repository root:
 
@@ -221,7 +248,7 @@ DASHBOARD_UPLOAD_DIR
 DASHBOARD_IMPORT_SERVICE_SRC
 ```
 
-## 7. Current MVP State
+## 8. Current MVP State
 
 Implemented:
 
@@ -229,10 +256,12 @@ Implemented:
 - Python workbook inspection, extraction, source file tracking, import job tracking, validation reporting, and PostgreSQL loading CLI.
 - FastAPI dashboard endpoints backed by PostgreSQL.
 - React dashboard shell backed by API calls, with loading, error, empty states, ranking chart, province-weight heatmap, import diagnostics, import history selection, and workbook upload.
-- Cloudflare Worker API gateway and upload queue skeleton.
+- Cloudflare Worker API gateway, R2 upload path, Queue producer, and Queue consumer handoff to the backend import runner.
 - Local backend workbook upload endpoint that reuses the Python import CLI.
+- Streamlit quick-share entry point with Excel upload and in-memory parsing.
 
 Next:
 
-- Wire Cloudflare Worker upload queue tasks to the backend import runner.
 - Add asynchronous job execution for large workbooks so upload requests do not wait for the whole import.
+- Choose the production backend container host and managed PostgreSQL provider.
+- Configure real Cloudflare account resources: Pages, Worker routes, R2 bucket, Queue, and secrets.

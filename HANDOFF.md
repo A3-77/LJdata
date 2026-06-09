@@ -174,6 +174,7 @@ Implemented:
 - Cloudflare Worker API gateway.
 - Cloudflare R2 upload path.
 - Cloudflare Queue producer and consumer.
+- Streamlit quick-share version with Excel upload and in-memory parsing.
 
 Verified locally:
 
@@ -212,7 +213,7 @@ Important engineering follow-ups:
 
 Later / optional:
 
-- Streamlit quick-share version.
+- Streamlit styling/polish beyond the current quick-share version.
 - Cloudflare custom domain and access policy.
 - Production monitoring and logs.
 - Scheduled import or batch import mode.
@@ -251,6 +252,34 @@ cd import-service
 cd cloudflare/workers
 npm run typecheck
 ```
+
+Run the Streamlit quick-share version:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+```
+
+## Streamlit Deployment
+
+The Streamlit version is a separate lightweight entry point:
+
+```text
+streamlit_app.py
+requirements.txt
+```
+
+It does not replace the React/FastAPI/PostgreSQL version. It lets a user upload an Excel workbook and inspect KPI, validation, ranking, site samples, and province-weight heatmap directly in Streamlit.
+
+Deploy on Streamlit Community Cloud:
+
+```text
+Repository: A3-77/LJdata
+Branch: main
+Main file path: streamlit_app.py
+```
+
+No PostgreSQL secret is required for the current Streamlit quick-share version because it parses the uploaded workbook in memory.
 
 ## Deployment Shape
 
