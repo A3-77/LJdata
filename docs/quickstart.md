@@ -182,8 +182,7 @@ The Streamlit entry point is for quick sharing and review. It does not require P
 Run locally from the repository root:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+powershell -ExecutionPolicy Bypass -File scripts/start-streamlit.ps1
 ```
 
 Open:
@@ -201,6 +200,12 @@ Main file path: streamlit_app.py
 ```
 
 No PostgreSQL secret is required for the current Streamlit quick-share version.
+
+For handoff troubleshooting, see:
+
+```text
+docs/local-handoff.md
+```
 
 ## 6. Cloudflare Worker
 

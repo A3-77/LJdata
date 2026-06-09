@@ -30,6 +30,8 @@ cd ..\..
 
 ## Run Locally
 
+For packaged-code troubleshooting and the simplest reviewer workflow, see `docs/local-handoff.md`.
+
 Start Docker Desktop first.
 
 Initialize PostgreSQL and import the default workbook if the file exists on the desktop:
@@ -256,8 +258,7 @@ npm run typecheck
 Run the Streamlit quick-share version:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m streamlit run streamlit_app.py
+powershell -ExecutionPolicy Bypass -File scripts/start-streamlit.ps1
 ```
 
 ## Streamlit Deployment
