@@ -11,21 +11,24 @@ Do not send source Excel files, `.env` files, local uploads, `.venv`, `node_modu
 - Git
 - Node.js 20+
 - Python 3.11+
-- Docker Desktop
+- Docker Desktop is optional. The normal local workflow uses SQLite and does not require Docker.
+
+For a new computer, start here:
+
+```text
+docs/new-computer-setup.md
+```
+
+Check the machine before installing dependencies:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-local-env.ps1
+```
 
 ## First-Time Setup
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e import-service -e backend-api
-
-cd frontend
-npm install
-cd ..
-
-cd cloudflare/workers
-npm install
-cd ..\..
+powershell -ExecutionPolicy Bypass -File scripts/bootstrap-local.ps1
 ```
 
 ## Run Locally
@@ -33,12 +36,10 @@ cd ..\..
 For packaged-code troubleshooting and the simplest reviewer workflow, see `docs/local-handoff.md`.
 For the weekly React snapshot and Cloudflare Direct Upload workflow, see `docs/snapshot-deploy.md`.
 
-Start Docker Desktop first.
-
-Initialize PostgreSQL and import the default workbook if the file exists on the desktop:
+Import the workbook into the local SQLite database:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/setup-postgres-docker.ps1
+powershell -ExecutionPolicy Bypass -File scripts/setup-sqlite-local.ps1 -Workbook "C:\path\to\workbook.xlsx"
 ```
 
 Start frontend and backend:
@@ -66,7 +67,8 @@ http://127.0.0.1:8000/ready
 |---:|---|---|
 | 5173 | Vite frontend | React dashboard UI |
 | 8000 | FastAPI backend | Dashboard API, import status, workbook upload runner |
-| 5432 | PostgreSQL Docker container | Local database |
+| file | SQLite | Default local database at `.runtime/dashboard.sqlite` |
+| 5432 | PostgreSQL Docker container | Optional compatibility database |
 | 8787 | Wrangler dev, optional | Cloudflare Worker local dev |
 | 18000 | Temporary test only | Used when manually testing the backend container |
 
@@ -76,7 +78,7 @@ Expected local URLs:
 Frontend: http://127.0.0.1:5173/
 Backend health: http://127.0.0.1:8000/health
 Backend readiness: http://127.0.0.1:8000/ready
-PostgreSQL: postgresql://dashboard:dashboard@127.0.0.1:5432/dashboard
+SQLite: .runtime/dashboard.sqlite
 ```
 
 ## Backend API Surface
@@ -152,8 +154,9 @@ IMPORT_QUEUE Queue binding
 Implemented:
 
 - PostgreSQL schema and seed data.
-- Local PostgreSQL Docker Compose service.
-- Excel workbook inspection, validation, extraction, and load CLI.
+- SQLite no-Docker local workflow.
+- Optional local PostgreSQL Docker Compose service.
+- Excel workbook inspection, validation, extraction, and SQLite/PostgreSQL load CLI.
 - Template profile support through `franchise_contribution_v1`.
 - Source file, source sheet, import job, validation result, and import error persistence.
 - Dashboard overview API.
@@ -170,7 +173,8 @@ Implemented:
 - Upload Excel from the import page.
 - Demo data mode for frontend-only inspection.
 - Local startup script.
-- Local PostgreSQL setup/import script.
+- Local SQLite setup/import script.
+- Optional local PostgreSQL setup/import script.
 - Backend readiness check.
 - Backend Dockerfile for container deployment.
 - Cloudflare Pages config.
@@ -187,7 +191,7 @@ Verified locally:
 - Cloudflare Worker typecheck passes.
 - Docker backend image builds.
 - Backend container `/health` runs.
-- 202604 workbook imports successfully.
+- 202604 workbook imports successfully into SQLite.
 - Latest successful import job loaded 155 franchise rows, 293 site rows, 403 region flow rows, and 4433 franchise flow rows.
 
 ## Remaining Development Work
@@ -289,5 +293,6 @@ No PostgreSQL secret is required for the current Streamlit quick-share version b
 Cloudflare Pages: frontend
 Cloudflare Worker: upload gateway, R2, Queue
 Backend container: FastAPI + import-service
-PostgreSQL: managed database or Docker for local development
+SQLite: default local development database
+PostgreSQL: optional managed production database if a live API is needed
 ```

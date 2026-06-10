@@ -10,7 +10,7 @@
 | `frontend/` | React/Vite 前端看板 |
 | `backend-api/` | API 服务，建议 FastAPI 或 Workers API 适配层 |
 | `import-service/` | Python Excel 导入、清洗、校验、入库服务 |
-| `database/migrations/` | PostgreSQL 建表和变更脚本 |
+| `database/migrations/` | SQLite/PostgreSQL 建表和变更脚本 |
 | `database/seeds/` | 初始字典、指标、标签、模板配置 |
 | `cloudflare/workers/` | Cloudflare Workers API 网关代码 |
 | `cloudflare/r2/` | R2 bucket、文件路径、对象存储约定 |
@@ -39,19 +39,19 @@ outputs/
 
 ## 推荐下一步
 
-1. 在安装 Docker/PostgreSQL 的环境做真实入库回归。
-2. 增加行级导入异常明细。
-3. 为 Cloudflare Pages/Workers/R2/Queues 补部署配置。
-4. 将 Cloudflare Worker 上传任务接入 `load-workbook`。
+1. 新电脑先阅读 `docs/new-computer-setup.md`，运行 `scripts/check-local-env.ps1` 检测环境。
+2. 用 `scripts/setup-sqlite-local.ps1` 导入每周 Excel，在 `http://127.0.0.1:5173/` 本地预览。
+3. 预览确认后用 `scripts/publish-cloudflare-snapshot.ps1` 生成并上传 Cloudflare Pages 快照。
+4. 增加行级导入异常明细。
 5. 为前端补更多图表页面和下钻筛选。
 
 ## 当前状态
 
 已创建 MVP 工程骨架：
 
-- `database/`：PostgreSQL 建表和种子数据。
+- `database/`：SQLite/PostgreSQL 建表脚本和种子数据。
 - `import-service/`：Python Excel 检查、抽取、source/import job 记录、校验报告、入库 CLI。
-- `backend-api/`：FastAPI 查询接口，已对接 PostgreSQL。
+- `backend-api/`：FastAPI 查询接口，默认对接本地 SQLite，也保留 PostgreSQL 兼容。
 - `frontend/`：React/Vite 看板，已从 API 拉取总览、Top/Bottom 排行，并渲染排行图和目的省份/公斤段热力图。
 - `cloudflare/`：Workers、R2、Queues 入口骨架。
 
@@ -59,4 +59,5 @@ outputs/
 
 ```text
 docs/quickstart.md
+docs/new-computer-setup.md
 ```
