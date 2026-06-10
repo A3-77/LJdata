@@ -17,6 +17,7 @@ README.md
 docs/current-usable-workflow.md
 docs/new-computer-setup.md
 docs/excel-template-change-playbook.md
+docs/design-polish-guide.md
 docs/snapshot-deploy.md
 ```
 
@@ -114,3 +115,23 @@ npx --yes wrangler login
 ```
 
 Do not store Cloudflare API tokens in the repository.
+
+## Design Notes
+
+For UI polish, follow:
+
+```text
+PRODUCT.md
+docs/design-polish-guide.md
+```
+
+Use the local design skills when available:
+
+```text
+impeccable
+dashboard-dataviz
+redesign-existing-projects
+minimalist-ui
+```
+
+The dashboard should feel like a real operations tool: restrained, readable, auditable, and dense enough for repeated business use. Avoid generic AI dashboard patterns: decorative gradients, glass panels, excessive shadows, over-rounded cards, and flashy dark data-screen styling.
