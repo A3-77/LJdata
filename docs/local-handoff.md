@@ -47,10 +47,18 @@ powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 http://127.0.0.1:5173/
 ```
 
+`127.0.0.1` 是每台电脑自己的本地地址。端口 `5173`、`8000`、`8501` 是默认值，不是绑定在某一台电脑上的固定资源。
+
 默认数据库文件：
 
 ```text
 .runtime/dashboard.sqlite
+```
+
+如果默认端口被占用：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -FrontendPort 5174 -BackendPort 8001
 ```
 
 ## Streamlit 快速查看

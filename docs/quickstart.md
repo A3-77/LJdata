@@ -28,6 +28,8 @@ powershell -ExecutionPolicy Bypass -File scripts/setup-sqlite-local.ps1 -Workboo
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 ```
 
+这些端口都是运行者自己电脑上的本地端口。`127.0.0.1` 不指向你的电脑，也不指向服务器，只指向当前打开命令行的那台电脑。
+
 打开：
 
 ```text
@@ -41,6 +43,8 @@ Ready:    http://127.0.0.1:8000/ready
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -FrontendPort 5174 -BackendPort 8001
 ```
+
+换端口时，启动脚本会自动把前端代理指向新的后端端口。
 
 ## 4. 常用检查
 

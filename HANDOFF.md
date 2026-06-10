@@ -47,6 +47,12 @@ Open:
 http://127.0.0.1:5173/
 ```
 
+These are local ports on the operator's own computer. `127.0.0.1` always means the machine running the command. If a port is occupied, use:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -FrontendPort 5174 -BackendPort 8001
+```
+
 Health checks:
 
 ```text

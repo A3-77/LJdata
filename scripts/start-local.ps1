@@ -63,7 +63,7 @@ if (Test-Port $BackendPort) {
 if (Test-Port $FrontendPort) {
   Write-Host "Frontend already listening on http://127.0.0.1:$FrontendPort"
 } else {
-  $frontendCommand = "Set-Location -LiteralPath '$FrontendDir'; npm run dev -- --host 127.0.0.1 --port $FrontendPort"
+  $frontendCommand = "Set-Location -LiteralPath '$FrontendDir'; `$env:VITE_DEV_API_PROXY_TARGET='http://127.0.0.1:$BackendPort'; npm run dev -- --host 127.0.0.1 --port $FrontendPort"
   Start-HiddenPowerShell `
     -Name "frontend" `
     -Command $frontendCommand `
@@ -75,6 +75,7 @@ Write-Host ""
 Write-Host "Local dashboard:"
 Write-Host "  Frontend: http://127.0.0.1:$FrontendPort/"
 Write-Host "  Backend:  http://127.0.0.1:$BackendPort/health"
+Write-Host "  API proxy: http://127.0.0.1:$BackendPort"
 Write-Host "  Database: $DatabaseUrl"
 Write-Host ""
 Write-Host "Logs:"

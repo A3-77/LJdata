@@ -90,6 +90,8 @@ validation_failed: 0
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 ```
 
+这里的端口都是“当前这台电脑自己的本地端口”，不是写死到你的电脑，也不是公网地址。`127.0.0.1` 只表示正在运行命令的那台电脑自己。
+
 打开：
 
 ```text
@@ -108,6 +110,14 @@ http://127.0.0.1:8000/ready
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -FrontendPort 5174 -BackendPort 8001
 ```
+
+换端口后打开新的前端地址，例如：
+
+```text
+http://127.0.0.1:5174/
+```
+
+启动脚本会同步设置前端 API 代理，让前端请求新的后端端口。
 
 ## 7. 确认后上传 Cloudflare 快照
 
