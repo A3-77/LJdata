@@ -6,7 +6,7 @@ This project has two local entry points, and they need different runtime pieces:
 
 | Entry | Port | Needs | Use case |
 |---|---:|---|---|
-| Streamlit quick-share | 8501 | Python dependencies, uploaded Excel | Fast local review without database |
+| Streamlit quick-share | 8501 | Python dependencies, uploaded Excel | Fast local review without database, supports one or more months |
 | React dashboard | 5173 | Node.js frontend, FastAPI backend | Full engineering dashboard |
 | FastAPI backend | 8000 | Python dependencies, PostgreSQL | API for React dashboard |
 | PostgreSQL | 5432 | Docker Desktop or local PostgreSQL | Persistent imported data |
@@ -76,7 +76,7 @@ Differences usually come from:
 - Different Streamlit versions. `requirements.txt` is pinned to reduce this.
 - Different theme settings. `.streamlit/config.toml` fixes the dashboard to a light theme.
 - Different browser zoom, font rendering, or operating system.
-- Different data. The uploaded workbook controls KPI, ranking, heatmap, and validation results.
+- Different data. The uploaded workbook controls KPI, single-ticket contribution, concentration, flow risk, dispatch-fee proxy analysis, and validation results.
 - Opening the wrong entry point. Streamlit and React are separate implementations.
 
 Use Streamlit for quick sharing. Use React/FastAPI/PostgreSQL for continued engineering work.

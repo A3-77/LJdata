@@ -177,7 +177,7 @@ Demo mode is only for UI inspection. It uses the validated 202604 overview total
 
 ## 5. Streamlit Quick Share
 
-The Streamlit entry point is for quick sharing and review. It does not require PostgreSQL. Users upload an Excel workbook in the browser, and the app parses KPI, validation, ranking, site samples, and province-weight heatmap in memory.
+The Streamlit entry point is for quick sharing and review. It does not require PostgreSQL. Users upload one or more Excel workbooks in the browser, and the app parses KPI, validation, single-ticket contribution, Top 20/30 contribution concentration, franchise cards, combined tables, flow risk, and dispatch-fee proxy analysis in memory.
 
 Run locally from the repository root:
 
@@ -263,7 +263,7 @@ Implemented:
 - React dashboard shell backed by API calls, with loading, error, empty states, ranking chart, province-weight heatmap, import diagnostics, import history selection, and workbook upload.
 - Cloudflare Worker API gateway, R2 upload path, Queue producer, and Queue consumer handoff to the backend import runner.
 - Local backend workbook upload endpoint that reuses the Python import CLI.
-- Streamlit quick-share entry point with Excel upload and in-memory parsing.
+- Streamlit quick-share entry point with multi-workbook upload, single-ticket contribution review, franchise cards, combined table, flow risk, and dispatch-fee proxy analysis.
 
 Next:
 

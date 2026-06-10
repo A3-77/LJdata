@@ -176,7 +176,7 @@ Implemented:
 - Cloudflare Worker API gateway.
 - Cloudflare R2 upload path.
 - Cloudflare Queue producer and consumer.
-- Streamlit quick-share version with Excel upload and in-memory parsing.
+- Streamlit quick-share version with multi-workbook upload, single-ticket contribution review, franchise cards, combined table, flow risk, and dispatch-fee proxy analysis.
 
 Verified locally:
 
@@ -270,7 +270,7 @@ streamlit_app.py
 requirements.txt
 ```
 
-It does not replace the React/FastAPI/PostgreSQL version. It lets a user upload an Excel workbook and inspect KPI, validation, ranking, site samples, and province-weight heatmap directly in Streamlit.
+It does not replace the React/FastAPI/PostgreSQL version. It lets a user upload one or more Excel workbooks and inspect KPI, validation, single-ticket contribution, Top 20/30 contribution concentration, franchise cards, combined tables, flow risk, and dispatch-fee proxy analysis directly in Streamlit.
 
 Deploy on Streamlit Community Cloud:
 
