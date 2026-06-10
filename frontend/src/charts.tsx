@@ -35,10 +35,11 @@ function useChart(
   return ref;
 }
 
-export function RankChart({ items }: { items: RankItem[] }) {
+export function RankChart({ items, limit = 8 }: { items: RankItem[]; limit?: number }) {
+  const visibleItems = items.slice(0, limit);
   const ref = useChart(
     () => ({
-      grid: { top: 8, right: 88, bottom: 24, left: 138 },
+      grid: { top: 8, right: 96, bottom: 24, left: 148 },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
@@ -55,18 +56,20 @@ export function RankChart({ items }: { items: RankItem[] }) {
       yAxis: {
         type: "category",
         inverse: true,
-        data: items.map((item) => item.name),
+        data: visibleItems.map((item) => item.name),
         axisLabel: {
-          width: 120,
+          width: 132,
           overflow: "truncate",
           color: "#42505b",
+          lineHeight: 18,
         },
       },
       series: [
         {
           type: "bar",
-          data: items.map((item) => Number((item.total_contribution / 10000).toFixed(2))),
-          barWidth: 14,
+          data: visibleItems.map((item) => Number((item.total_contribution / 10000).toFixed(2))),
+          barWidth: 12,
+          barCategoryGap: "42%",
           itemStyle: { color: "#2d6476", borderRadius: [0, 3, 3, 0] },
           label: {
             show: true,
@@ -77,10 +80,10 @@ export function RankChart({ items }: { items: RankItem[] }) {
         },
       ],
     }),
-    [items],
+    [visibleItems],
   );
 
-  if (!items.length) {
+  if (!visibleItems.length) {
     return <div className="empty-panel">暂无排行图数据</div>;
   }
 
