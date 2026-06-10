@@ -24,6 +24,8 @@ function contributionShare(items: RankItem[], totalContribution: number | null |
 }
 
 export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
+  const [dimensionMode, setDimensionMode] = useState<"time" | "franchise" | "project" | "flow">("time");
+  const [focusMode, setFocusMode] = useState<"top" | "risk" | "single">("top");
   const [displayMode, setDisplayMode] = useState<"table" | "card" | "threshold">("table");
   const [selectedFranchise, setSelectedFranchise] = useState("");
   const overview = data?.overview;
@@ -47,6 +49,10 @@ export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
   const thresholdRows = [...lowContributionItems, ...bottomRank]
     .filter((item, index, rows) => rows.findIndex((row) => row.name === item.name) === index)
     .slice(0, 12);
+  const topProvinces = sumHeatmapByProvince(heatmap).slice(0, 5);
+  const topWeightBands = sumHeatmapByWeightBand(heatmap)
+    .filter((item) => item.value !== 0)
+    .slice(0, 5);
 
   return (
     <section className="analysis-view">
@@ -71,24 +77,136 @@ export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
             <h2>单票边际贡献</h2>
             <span>时间 / 加盟商 / 项目 / 流向</span>
           </div>
-          <ul className="analysis-list">
-            <li>
+          <div className="analysis-list" role="tablist" aria-label="单票边际贡献查看维度">
+            <button
+              type="button"
+              className={dimensionMode === "time" ? "analysis-row-action active" : "analysis-row-action"}
+              aria-pressed={dimensionMode === "time"}
+              onClick={() => setDimensionMode("time")}
+            >
               <strong>时间维度变化</strong>
               <span>按月份观察单票边际贡献趋势，为后续数据分析奠定基础。当前 API 默认为单月，后续多月入库后可直接接趋势图。</span>
-            </li>
-            <li>
+            </button>
+            <button
+              type="button"
+              className={dimensionMode === "franchise" ? "analysis-row-action active" : "analysis-row-action"}
+              aria-pressed={dimensionMode === "franchise"}
+              onClick={() => setDimensionMode("franchise")}
+            >
               <strong>加盟商维度</strong>
               <span>确认 Top 20 或 Top 30 加盟商贡献占比，并定位单票贡献为负或低于 3 毛、4 毛阈值的加盟商。</span>
-            </li>
-            <li>
+            </button>
+            <button
+              type="button"
+              className={dimensionMode === "project" ? "analysis-row-action active" : "analysis-row-action"}
+              aria-pressed={dimensionMode === "project"}
+              onClick={() => setDimensionMode("project")}
+            >
               <strong>项目维度</strong>
               <span>查看整体编辑贡献结果，先看总值，不拆出港、进港细节，避免过早陷入明细噪音。</span>
-            </li>
-            <li>
+            </button>
+            <button
+              type="button"
+              className={dimensionMode === "flow" ? "analysis-row-action active" : "analysis-row-action"}
+              aria-pressed={dimensionMode === "flow"}
+              onClick={() => setDimensionMode("flow")}
+            >
               <strong>流向和供应商维度</strong>
               <span>查看单票和总额，优先关注 Top 流向及负值组合；供应商字段接入后增加同口径排行。</span>
-            </li>
-          </ul>
+            </button>
+          </div>
+
+          <div className="analysis-mode-panel">
+            {dimensionMode === "time" ? (
+              <>
+                <div className="panel-head compact">
+                  <h2>当前月单票结果</h2>
+                  <span>{overview?.period_month ?? "当前月"} / 区域口径</span>
+                </div>
+                <section className="kpi-grid compact-kpis">
+                  <KpiCard label="区域单票贡献" value={regionUnitContribution.toFixed(3)} tone={regionUnitContribution < 0.3 ? "risk" : "good"} />
+                  <KpiCard label="总贡献" value={moneyWan(overview?.total_contribution)} />
+                  <KpiCard label="出港票量" value={countWan(overview?.outbound_tickets)} />
+                  <KpiCard label="负值流向单元" value={`${negativeFlowCount}`} tone={negativeFlowCount ? "risk" : "neutral"} />
+                </section>
+              </>
+            ) : null}
+
+            {dimensionMode === "franchise" ? (
+              <>
+                <div className="panel-head compact">
+                  <h2>加盟商集中度</h2>
+                  <span>Top 20 / Top 30 / 低贡献样本</span>
+                </div>
+                <section className="kpi-grid compact-kpis">
+                  <KpiCard label="Top 20 占比" value={`${top20Share.toFixed(1)}%`} tone={top20Share >= 80 ? "good" : "neutral"} />
+                  <KpiCard label="Top 30 占比" value={`${top30Share.toFixed(1)}%`} tone={top30Share >= 80 ? "good" : "neutral"} />
+                  <KpiCard label="低贡献样本" value={`${lowContributionItems.length}`} tone={lowContributionItems.length ? "risk" : "neutral"} />
+                  <KpiCard label="加盟商数" value={plainNumber(overview?.franchise_count)} />
+                </section>
+              </>
+            ) : null}
+
+            {dimensionMode === "project" ? (
+              <>
+                <div className="panel-head compact">
+                  <h2>项目总结果</h2>
+                  <span>出港 + 进港 + 扣款</span>
+                </div>
+                <table>
+                  <tbody>
+                    <tr>
+                      <td>出港总贡献</td>
+                      <td>{signedMoneyWan(overview?.outbound_contribution)}</td>
+                    </tr>
+                    <tr>
+                      <td>进港总贡献</td>
+                      <td>{signedMoneyWan(overview?.inbound_contribution)}</td>
+                    </tr>
+                    <tr>
+                      <td>扣款小计</td>
+                      <td>{moneyWan(overview?.deduction_total)}</td>
+                    </tr>
+                    <tr>
+                      <td>总贡献</td>
+                      <td>{signedMoneyWan(overview?.total_contribution)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+
+            {dimensionMode === "flow" ? (
+              <>
+                <div className="panel-head compact">
+                  <h2>流向贡献摘要</h2>
+                  <span>目的省份 / 公斤段</span>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>口径</th>
+                      <th>贡献</th>
+                      <th>票量</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...topProvinces, ...topWeightBands].length ? (
+                      [...topProvinces, ...topWeightBands].map((item) => (
+                        <tr key={`${item.name}-${item.value}`}>
+                          <td>{item.name}</td>
+                          <td className={item.value < 0 ? "negative-text" : ""}>{signedMoneyWan(item.value)}</td>
+                          <td>{countWan(item.tickets)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <EmptyRows colSpan={3} />
+                    )}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+          </div>
         </article>
 
         <article className="panel">
@@ -96,7 +214,7 @@ export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
             <h2>加盟商维度数据查看重点</h2>
             <span>当前月</span>
           </div>
-          <table>
+          <table className="action-table">
             <thead>
               <tr>
                 <th>查看维度</th>
@@ -105,17 +223,17 @@ export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr className={focusMode === "top" ? "active" : ""} onClick={() => setFocusMode("top")}>
                 <td>Top 加盟商</td>
                 <td>Top 20: {top20Share.toFixed(1)}%</td>
                 <td>{top20Share >= 80 ? "头部集中度较高" : "未达到 80%，需继续查看 Top 30 或全量大表"}</td>
               </tr>
-              <tr>
+              <tr className={focusMode === "risk" ? "active" : ""} onClick={() => setFocusMode("risk")}>
                 <td>负值及低贡献</td>
                 <td>{lowContributionItems.length} 个样本</td>
                 <td>优先复核单票贡献为负、总贡献为负或低毛利样本</td>
               </tr>
-              <tr>
+              <tr className={focusMode === "single" ? "active" : ""} onClick={() => setFocusMode("single")}>
                 <td>任意加盟商</td>
                 <td>卡片 + 明细</td>
                 <td>选择加盟商后看历史贡献变化和总值</td>
@@ -125,6 +243,68 @@ export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
           <div className="analysis-summary-row">
             <span>Top 30 贡献占比</span>
             <strong>{top30Share.toFixed(1)}%</strong>
+          </div>
+          <div className="analysis-mode-panel compact-panel">
+            {focusMode === "top" ? (
+              <>
+                <div className="panel-head compact">
+                  <h2>Top 加盟商样本</h2>
+                  <span>按总贡献排序</span>
+                </div>
+                <table>
+                  <tbody>
+                    {topRank.slice(0, 5).map((item) => (
+                      <tr key={item.name}>
+                        <td>{item.name}</td>
+                        <td>{signedMoneyWan(item.total_contribution)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+
+            {focusMode === "risk" ? (
+              <>
+                <div className="panel-head compact">
+                  <h2>优先复核样本</h2>
+                  <span>负贡献 / 亏损 / 高扣款</span>
+                </div>
+                <table>
+                  <tbody>
+                    {thresholdRows.slice(0, 5).map((item) => (
+                      <tr key={item.name}>
+                        <td>{item.name}</td>
+                        <td className={item.total_contribution < 0 ? "negative-text" : ""}>{signedMoneyWan(item.total_contribution)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            ) : null}
+
+            {focusMode === "single" ? (
+              <>
+                <div className="analysis-toolbar">
+                  <label>
+                    选择加盟商
+                    <select value={activeFranchiseName} onChange={(event) => setSelectedFranchise(event.target.value)}>
+                      {franchiseRows.map((item) => (
+                        <option key={`${item.name}-${item.total_contribution}`} value={item.name}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <section className="kpi-grid compact-kpis">
+                  <KpiCard label="总贡献" value={moneyWan(activeFranchise?.total_contribution)} tone={(activeFranchise?.total_contribution ?? 0) < 0 ? "risk" : "good"} />
+                  <KpiCard label="单票贡献" value={unitContribution(activeFranchise?.total_contribution, activeFranchise?.outbound_tickets).toFixed(3)} />
+                  <KpiCard label="出港票量" value={countWan(activeFranchise?.outbound_tickets)} />
+                  <KpiCard label="扣款" value={moneyWan(activeFranchise?.deduction_total)} tone={(activeFranchise?.deduction_total ?? 0) >= 50000 ? "risk" : "neutral"} />
+                </section>
+              </>
+            ) : null}
           </div>
         </article>
 
