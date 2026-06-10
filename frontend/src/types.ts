@@ -117,4 +117,4 @@ export type UploadImportResponse = {
   summary: Record<string, unknown>;
 };
 
-export type ViewKey = "overview" | "franchise" | "site" | "flow" | "deduction" | "import";
+export type ViewKey = "overview" | "analysis" | "franchise" | "site" | "flow" | "deduction" | "import";

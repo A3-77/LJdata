@@ -5,6 +5,197 @@ import { DEMO_MODE, METRIC_LABELS } from "./constants";
 import { countWan, moneyWan, percent, plainNumber, signedMoneyWan } from "./format";
 import { sumHeatmapByProvince, sumHeatmapByWeightBand } from "./heatmapUtils";
 import type { ContributionHeatmap, DashboardData, Overview, RankItem, UploadImportResponse } from "./types";
+
+function unitContribution(totalContribution: number | null | undefined, tickets: number | null | undefined) {
+  const denominator = tickets ?? 0;
+  if (!denominator) {
+    return 0;
+  }
+  return (totalContribution ?? 0) / denominator;
+}
+
+function contributionShare(items: RankItem[], totalContribution: number | null | undefined, limit: number) {
+  const total = totalContribution ?? 0;
+  if (!total) {
+    return 0;
+  }
+  const topTotal = items.slice(0, limit).reduce((sum, item) => sum + Math.max(0, item.total_contribution), 0);
+  return percent(topTotal, total);
+}
+
+export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
+  const overview = data?.overview;
+  const topRank = data?.topRank ?? [];
+  const bottomRank = data?.bottomRank ?? [];
+  const siteRank = data?.siteRank ?? [];
+  const heatmap = data?.heatmap;
+  const top20Share = contributionShare(topRank, overview?.total_contribution, 20);
+  const top30Share = contributionShare(topRank, overview?.total_contribution, 30);
+  const regionUnitContribution = unitContribution(overview?.total_contribution, overview?.outbound_tickets);
+  const lowContributionItems = [...topRank, ...bottomRank]
+    .filter((item) => item.total_contribution < 0 || item.tags.some((tag) => /负|低|亏损|扣款/.test(tag)))
+    .slice(0, 8);
+  const negativeFlowCount = (heatmap?.cells ?? []).filter((cell) => cell.value < 0).length;
+  const dispatchRiskSites = siteRank
+    .filter((item) => (item.deduction_total ?? 0) >= 20000 || item.total_contribution < 0 || (item.inbound_contribution ?? 0) < 0)
+    .slice(0, 6);
+
+  return (
+    <section className="analysis-view">
+      <section className="analysis-hero panel wide">
+        <div>
+          <h2>数据查看维度与重点</h2>
+          <p>
+            这个页面把贡献表的看数口径固化成可执行检查项：先看单票边际贡献，再看加盟商集中度、项目总结果、
+            流向和供应商口径，最后进入派费影响因素与异常网点。
+          </p>
+        </div>
+        <div className="analysis-stats">
+          <KpiCard label="区域单票边际贡献" value={regionUnitContribution.toFixed(3)} tone={regionUnitContribution < 0.3 ? "risk" : "good"} />
+          <KpiCard label="Top 20 贡献占比" value={`${top20Share.toFixed(1)}%`} tone={top20Share >= 80 ? "good" : "neutral"} />
+          <KpiCard label="负值流向单元" value={`${negativeFlowCount}`} tone={negativeFlowCount ? "risk" : "neutral"} />
+        </div>
+      </section>
+
+      <section className="analysis-grid">
+        <article className="panel analysis-section">
+          <div className="panel-head">
+            <h2>单票边际贡献</h2>
+            <span>时间 / 加盟商 / 项目 / 流向</span>
+          </div>
+          <ul className="analysis-list">
+            <li>
+              <strong>时间维度变化</strong>
+              <span>按月份观察单票边际贡献趋势，为后续数据分析奠定基础。当前 API 默认为单月，后续多月入库后可直接接趋势图。</span>
+            </li>
+            <li>
+              <strong>加盟商维度</strong>
+              <span>确认 Top 20 或 Top 30 加盟商贡献占比，并定位单票贡献为负或低于 3 毛、4 毛阈值的加盟商。</span>
+            </li>
+            <li>
+              <strong>项目维度</strong>
+              <span>查看整体编辑贡献结果，先看总值，不拆出港、进港细节，避免过早陷入明细噪音。</span>
+            </li>
+            <li>
+              <strong>流向和供应商维度</strong>
+              <span>查看单票和总额，优先关注 Top 流向及负值组合；供应商字段接入后增加同口径排行。</span>
+            </li>
+          </ul>
+        </article>
+
+        <article className="panel">
+          <div className="panel-head">
+            <h2>加盟商维度数据查看重点</h2>
+            <span>当前月</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>查看维度</th>
+                <th>核心指标</th>
+                <th>说明</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Top 加盟商</td>
+                <td>Top 20: {top20Share.toFixed(1)}%</td>
+                <td>{top20Share >= 80 ? "头部集中度较高" : "未达到 80%，需继续查看 Top 30 或全量大表"}</td>
+              </tr>
+              <tr>
+                <td>负值及低贡献</td>
+                <td>{lowContributionItems.length} 个样本</td>
+                <td>优先复核单票贡献为负、总贡献为负或低毛利样本</td>
+              </tr>
+              <tr>
+                <td>任意加盟商</td>
+                <td>卡片 + 明细</td>
+                <td>选择加盟商后看历史贡献变化和总值</td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="analysis-summary-row">
+            <span>Top 30 贡献占比</span>
+            <strong>{top30Share.toFixed(1)}%</strong>
+          </div>
+        </article>
+
+        <article className="panel wide analysis-section">
+          <div className="panel-head">
+            <h2>数据展示形式</h2>
+            <span>大表 + 卡片</span>
+          </div>
+          <div className="analysis-cards">
+            <div>
+              <strong>大表表现</strong>
+              <span>制作整体大表，涵盖时间、加盟商、项目结果、流向和负值标签，作为财务咨询和运营复核入口。</span>
+            </div>
+            <div>
+              <strong>卡片展示</strong>
+              <span>选择加盟商后展示总贡献、单票贡献、贡献占比、风险标签；多月数据接入后展示历史贡献变化。</span>
+            </div>
+            <div>
+              <strong>阈值复核</strong>
+              <span>低于 3 毛、4 毛或为负的样本进入风险清单，并可继续下钻网点、流向和扣款。</span>
+            </div>
+          </div>
+        </article>
+
+        <article className="panel wide analysis-section">
+          <div className="panel-head">
+            <h2>派费分析与数据处理</h2>
+            <span>影响因素 / 模型 / 同步</span>
+          </div>
+          <div className="dispatch-factor-grid">
+            <div>
+              <strong>派费影响因素</strong>
+              <span>中心距离、派送密度、派送面积、派件量、周边网点距离都会影响派费，距离远、面积大且件量少时派费可能更高。</span>
+            </div>
+            <div>
+              <strong>数据获取与处理</strong>
+              <span>当前已有贡献、扣款、票量、网点数据；后续补充派送面积、网点间距离、区域派件类型比例和派送密度。</span>
+            </div>
+            <div>
+              <strong>模型构建</strong>
+              <span>用已获取字段先构建派费压力代理分，后续接入距离和密度后识别每个网点最近三个网点及派费异常。</span>
+            </div>
+            <div>
+              <strong>上传与同步</strong>
+              <span>代理区提供字段后可同步部署；字段结构变化会导致上传报错，但属于可修复问题。</span>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>风险网点</th>
+                <th>加盟商</th>
+                <th>总贡献</th>
+                <th>扣款</th>
+                <th>标签</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dispatchRiskSites.length ? (
+                dispatchRiskSites.map((item) => (
+                  <tr key={`${item.franchise_name}-${item.name}`}>
+                    <td>{item.name}</td>
+                    <td>{item.franchise_name}</td>
+                    <td className={item.total_contribution < 0 ? "negative-text" : ""}>{signedMoneyWan(item.total_contribution)}</td>
+                    <td className={(item.deduction_total ?? 0) >= 20000 ? "negative-text" : ""}>{moneyWan(item.deduction_total)}</td>
+                    <td>{item.tags.join(" / ") || "待复核"}</td>
+                  </tr>
+                ))
+              ) : (
+                <EmptyRows colSpan={5} />
+              )}
+            </tbody>
+          </table>
+        </article>
+      </section>
+    </section>
+  );
+}
+
 export function OverviewView({
   data,
   loading,

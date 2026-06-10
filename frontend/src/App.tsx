@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchDashboardData, fetchImportDiagnostics, uploadImportFile } from "./api";
-import { DeductionView, FlowView, FranchiseView, ImportView, OverviewView, SiteView } from "./views";
+import { AnalysisGuideView, DeductionView, FlowView, FranchiseView, ImportView, OverviewView, SiteView } from "./views";
 import { DEMO_MODE, NAV_ITEMS, PERIOD_MONTH, REGION_CODE, REGION_LABEL } from "./constants";
 import { percent } from "./format";
 import type { DashboardData, UploadImportResponse, ViewKey } from "./types";
@@ -158,6 +158,8 @@ export function App() {
             maxContribution={maxContribution}
           />
         ) : null}
+
+        {activeView === "analysis" ? <AnalysisGuideView data={data} /> : null}
 
         {activeView === "franchise" ? <FranchiseView data={data} maxContribution={maxContribution} /> : null}
 

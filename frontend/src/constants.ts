@@ -12,6 +12,7 @@ export const WEIGHT_BANDS = ["0.3", "0.5", "1", "2", "3.2", "4", "5.2", "6", "7"
 
 export const NAV_ITEMS: { key: ViewKey; label: string; enabled: boolean }[] = [
   { key: "overview", label: "经营总览", enabled: true },
+  { key: "analysis", label: "分析重点", enabled: true },
   { key: "franchise", label: "加盟商贡献", enabled: true },
   { key: "site", label: "网点下钻", enabled: true },
   { key: "flow", label: "目的省份与公斤段", enabled: true },

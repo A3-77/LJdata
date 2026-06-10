@@ -320,6 +320,124 @@ h2 {
   gap: 12px;
 }
 
+.analysis-view {
+  display: grid;
+  gap: 12px;
+}
+
+.analysis-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.analysis-hero h2 {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.analysis-hero p {
+  max-width: 76ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.analysis-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 12px;
+}
+
+.analysis-section {
+  display: grid;
+  gap: 12px;
+}
+
+.analysis-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.analysis-list li {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.analysis-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.analysis-list strong,
+.analysis-cards strong,
+.dispatch-factor-grid strong {
+  font-size: 14px;
+}
+
+.analysis-list span,
+.analysis-cards span,
+.dispatch-factor-grid span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.analysis-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--accent-bg);
+  color: #1f469f;
+}
+
+.analysis-summary-row span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.analysis-summary-row strong {
+  font-size: 22px;
+}
+
+.analysis-cards,
+.dispatch-factor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.analysis-cards div,
+.dispatch-factor-grid div {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 112px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--surface-2);
+}
+
 .import-summary {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
@@ -704,7 +822,12 @@ th {
   .kpi-grid,
   .dashboard-grid,
   .import-summary,
-  .insight-grid {
+  .insight-grid,
+  .analysis-hero,
+  .analysis-grid,
+  .analysis-stats,
+  .analysis-cards,
+  .dispatch-factor-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -719,6 +842,11 @@ th {
   }
 
   .rank-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .analysis-list li {
     grid-template-columns: 1fr;
     gap: 6px;
   }
