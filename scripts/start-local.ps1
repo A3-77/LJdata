@@ -1,6 +1,7 @@
 param(
   [int]$FrontendPort = 5173,
-  [int]$BackendPort = 8000
+  [int]$BackendPort = 8000,
+  [string]$DatabaseUrl = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,6 +10,11 @@ $FrontendDir = Join-Path $RepoRoot "frontend"
 $BackendDir = Join-Path $RepoRoot "backend-api"
 $RuntimeDir = Join-Path $RepoRoot ".runtime"
 New-Item -ItemType Directory -Force -Path $RuntimeDir | Out-Null
+
+if (-not $DatabaseUrl) {
+  $SqlitePath = (Join-Path $RuntimeDir "dashboard.sqlite").Replace("\", "/")
+  $DatabaseUrl = "sqlite:///$SqlitePath"
+}
 
 function Test-Port {
   param([int]$Port)
@@ -46,7 +52,7 @@ if (-not (Test-Path (Join-Path $FrontendDir "node_modules"))) {
 if (Test-Port $BackendPort) {
   Write-Host "Backend already listening on http://127.0.0.1:$BackendPort"
 } else {
-  $backendCommand = "Set-Location -LiteralPath '$BackendDir'; `$env:PYTHONPATH='src'; & '..\.venv\Scripts\python.exe' -m uvicorn dashboard_api.main:app --host 127.0.0.1 --port $BackendPort"
+  $backendCommand = "Set-Location -LiteralPath '$BackendDir'; `$env:PYTHONPATH='src'; `$env:DATABASE_URL='$DatabaseUrl'; & '..\.venv\Scripts\python.exe' -m uvicorn dashboard_api.main:app --host 127.0.0.1 --port $BackendPort"
   Start-HiddenPowerShell `
     -Name "backend-api" `
     -Command $backendCommand `
@@ -69,6 +75,7 @@ Write-Host ""
 Write-Host "Local dashboard:"
 Write-Host "  Frontend: http://127.0.0.1:$FrontendPort/"
 Write-Host "  Backend:  http://127.0.0.1:$BackendPort/health"
+Write-Host "  Database: $DatabaseUrl"
 Write-Host ""
 Write-Host "Logs:"
 Write-Host "  $RuntimeDir"

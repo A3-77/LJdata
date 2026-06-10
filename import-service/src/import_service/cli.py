@@ -77,7 +77,7 @@ def main() -> None:
     flow_parser.add_argument("--include-total-rows", action="store_true")
     flow_parser.add_argument("--template-code", default="franchise_contribution_v1")
 
-    load_parser = subparsers.add_parser("load-summary", help="Load franchise and site summaries into PostgreSQL")
+    load_parser = subparsers.add_parser("load-summary", help="Load franchise and site summaries into the configured database")
     load_parser.add_argument("xlsx", type=Path)
     load_parser.add_argument("--database-url", required=True)
     load_parser.add_argument("--region-code", default="LN")
@@ -85,7 +85,7 @@ def main() -> None:
     load_parser.add_argument("--template-code", default="franchise_contribution_v1")
     load_parser.add_argument("--replace-period", action="store_true")
 
-    load_workbook_parser = subparsers.add_parser("load-workbook", help="Load all currently supported workbook sheets into PostgreSQL")
+    load_workbook_parser = subparsers.add_parser("load-workbook", help="Load all currently supported workbook sheets into the configured database")
     load_workbook_parser.add_argument("xlsx", type=Path)
     load_workbook_parser.add_argument("--database-url", required=True)
     load_workbook_parser.add_argument("--region-code", default="LN")
@@ -93,7 +93,7 @@ def main() -> None:
     load_workbook_parser.add_argument("--template-code", default="franchise_contribution_v1")
     load_workbook_parser.add_argument("--replace-period", action="store_true")
 
-    load_flow_parser = subparsers.add_parser("load-contribution-flow", help="Load unpivoted contribution flow into PostgreSQL")
+    load_flow_parser = subparsers.add_parser("load-contribution-flow", help="Load unpivoted contribution flow into the configured database")
     load_flow_parser.add_argument("xlsx", type=Path)
     load_flow_parser.add_argument("--database-url", required=True)
     load_flow_parser.add_argument("--scope", choices=["region", "franchise"], required=True)

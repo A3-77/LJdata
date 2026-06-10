@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import sqlite3
 from collections.abc import Iterable
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 from .models import ContributionFlowRow, FranchiseMonthRow, ImportErrorRow, SiteMonthRow, ValidationResult, WorkbookInspection
 from .templates import get_template_profile
@@ -14,6 +16,96 @@ def _require_psycopg():
     except ModuleNotFoundError as exc:
         raise RuntimeError("psycopg is required for database loading. Install import-service dependencies first.") from exc
     return psycopg
+
+
+def _is_sqlite_url(database_url: str) -> bool:
+    return database_url.lower().startswith("sqlite:")
+
+
+def _sqlite_path(database_url: str) -> str:
+    repo_root = Path(__file__).resolve().parents[3]
+    parsed = urlparse(database_url)
+    if parsed.path in {"", "/:memory:"}:
+        return ":memory:"
+    path = unquote(parsed.path)
+    if path.startswith("/") and len(path) > 2 and path[2] == ":":
+        path = path[1:]
+    elif path.startswith("/"):
+        path = path[1:]
+    resolved = Path(path)
+    if not resolved.is_absolute():
+        resolved = repo_root / resolved
+    return str(resolved)
+
+
+def _translate_sql(sql: str) -> str:
+    return sql.replace("%s", "?").replace("now()", "CURRENT_TIMESTAMP")
+
+
+class _SqliteCursor:
+    def __init__(self, cursor: sqlite3.Cursor):
+        self._cursor = cursor
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        self._cursor.close()
+
+    def execute(self, sql: str, params=()):
+        return self._cursor.execute(_translate_sql(sql), params)
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+
+class _SqliteConnection:
+    def __init__(self, connection: sqlite3.Connection):
+        self._connection = connection
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        if exc_type is None:
+            self._connection.commit()
+        else:
+            self._connection.rollback()
+        self._connection.close()
+
+    def cursor(self):
+        return _SqliteCursor(self._connection.cursor())
+
+    def commit(self):
+        self._connection.commit()
+
+
+def _sqlite_schema_sql() -> str:
+    repo_root = Path(__file__).resolve().parents[3]
+    return (repo_root / "database" / "migrations" / "001_init_sqlite.sql").read_text(encoding="utf-8")
+
+
+def _connect(database_url: str):
+    if not _is_sqlite_url(database_url):
+        psycopg = _require_psycopg()
+        return psycopg.connect(database_url)
+
+    path = _sqlite_path(database_url)
+    if path != ":memory:":
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path)
+    connection.row_factory = sqlite3.Row
+    connection.execute("pragma foreign_keys = on")
+    exists = connection.execute(
+        "select 1 from sqlite_master where type = 'table' and name = 'source_file'"
+    ).fetchone()
+    if not exists:
+        connection.executescript(_sqlite_schema_sql())
+        connection.commit()
+    return _SqliteConnection(connection)
 
 
 def _period_parts(period_month: str) -> tuple[int, int]:
@@ -104,11 +196,10 @@ def create_import_job(
     region_code: str = "LN",
     template_code: str = "franchise_contribution_v1",
 ) -> tuple[int, int]:
-    psycopg = _require_psycopg()
     source = Path(workbook_path)
     file_hash = file_sha256(source)
 
-    with psycopg.connect(database_url) as conn:
+    with _connect(database_url) as conn:
         with conn.cursor() as cursor:
             cursor.execute(
                 """
@@ -175,8 +266,7 @@ def finish_import_job(
     progress: int,
     message: str,
 ) -> None:
-    psycopg = _require_psycopg()
-    with psycopg.connect(database_url) as conn:
+    with _connect(database_url) as conn:
         with conn.cursor() as cursor:
             cursor.execute(
                 """
@@ -201,9 +291,8 @@ def finish_import_job(
 
 
 def save_validation_results(database_url: str, *, job_id: int, results: Iterable[ValidationResult]) -> int:
-    psycopg = _require_psycopg()
     results = list(results)
-    with psycopg.connect(database_url) as conn:
+    with _connect(database_url) as conn:
         with conn.cursor() as cursor:
             cursor.execute("delete from import_validation_result where job_id = %s", (job_id,))
             for result in results:
@@ -233,9 +322,8 @@ def save_validation_results(database_url: str, *, job_id: int, results: Iterable
 
 
 def save_import_errors(database_url: str, *, job_id: int, errors: Iterable[ImportErrorRow]) -> int:
-    psycopg = _require_psycopg()
     errors = list(errors)
-    with psycopg.connect(database_url) as conn:
+    with _connect(database_url) as conn:
         with conn.cursor() as cursor:
             cursor.execute("delete from import_error where job_id = %s", (job_id,))
             for error in errors:
@@ -271,13 +359,12 @@ def load_franchise_month_rows(
     file_id: int | None = None,
     template_code: str = "franchise_contribution_v1",
 ) -> int:
-    psycopg = _require_psycopg()
     rows = list(rows)
     if not rows:
         return 0
 
     period_month = rows[0].period_month
-    with psycopg.connect(database_url) as conn:
+    with _connect(database_url) as conn:
         with conn.cursor() as cursor:
             ensure_region(cursor, region_code, region_name)
             ensure_month(cursor, period_month)
@@ -358,13 +445,12 @@ def load_site_month_rows(
     file_id: int | None = None,
     template_code: str = "franchise_contribution_v1",
 ) -> int:
-    psycopg = _require_psycopg()
     rows = list(rows)
     if not rows:
         return 0
 
     period_month = rows[0].period_month
-    with psycopg.connect(database_url) as conn:
+    with _connect(database_url) as conn:
         with conn.cursor() as cursor:
             ensure_region(cursor, region_code, region_name)
             ensure_month(cursor, period_month)
@@ -429,7 +515,6 @@ def load_contribution_flow_rows(
     file_id: int | None = None,
     template_code: str = "franchise_contribution_v1",
 ) -> int:
-    psycopg = _require_psycopg()
     rows = list(rows)
     if not rows:
         return 0
@@ -437,7 +522,7 @@ def load_contribution_flow_rows(
     period_month = rows[0].period_month
     scope_type = rows[0].scope_type
 
-    with psycopg.connect(database_url) as conn:
+    with _connect(database_url) as conn:
         with conn.cursor() as cursor:
             ensure_region(cursor, region_code, region_name)
             ensure_month(cursor, period_month)

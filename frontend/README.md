@@ -27,7 +27,7 @@ $env:VITE_REGION_LABEL = "吉林"
 npm run dev
 ```
 
-If PostgreSQL/backend is not available and you only need to inspect the page UI:
+If the backend is not available and you only need to inspect the page UI:
 
 ```powershell
 $env:VITE_DEMO_MODE = "true"

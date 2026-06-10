@@ -4,6 +4,22 @@ FastAPI service for dashboard queries and import status.
 
 ## Run locally
 
+Default local development uses SQLite and does not require Docker:
+
+```powershell
+$env:DATABASE_URL = "sqlite:///../.runtime/dashboard.sqlite"
+$env:PYTHONPATH = "src"
+uvicorn dashboard_api.main:app --reload --port 8000
+```
+
+Or use the root helper:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ..\scripts\start-local.ps1
+```
+
+PostgreSQL is still supported when explicitly configured:
+
 ```powershell
 $env:DATABASE_URL = "postgresql://dashboard:dashboard@127.0.0.1:5432/dashboard"
 $env:PYTHONPATH = "src"
@@ -45,6 +61,6 @@ GET /api/import/jobs/{job_id}/validation-results
 GET /api/import/jobs/{job_id}/errors
 ```
 
-Dashboard responses query PostgreSQL tables populated by `import-service`.
+Dashboard responses query SQLite or PostgreSQL tables populated by `import-service`.
 
-Use `/health` for process liveness and `/ready` for deployment readiness. `/ready` checks the configured PostgreSQL connection.
+Use `/health` for process liveness and `/ready` for deployment readiness. `/ready` checks the configured database connection.

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import socket
+import sqlite3
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from fastapi import HTTPException
 
@@ -55,6 +57,53 @@ def _require_psycopg():
     return psycopg, dict_row
 
 
+def _is_sqlite_url(database_url: str) -> bool:
+    return database_url.lower().startswith("sqlite:")
+
+
+def _sqlite_path(database_url: str) -> str:
+    repo_root = Path(__file__).resolve().parents[3]
+    parsed = urlparse(database_url)
+    if parsed.path in {"", "/:memory:"}:
+        return ":memory:"
+    path = unquote(parsed.path)
+    if path.startswith("/") and len(path) > 2 and path[2] == ":":
+        path = path[1:]
+    elif path.startswith("/"):
+        path = path[1:]
+    resolved = Path(path)
+    if not resolved.is_absolute():
+        resolved = repo_root / resolved
+    return str(resolved)
+
+
+def _translate_sql(sql: str) -> str:
+    return sql.replace("%s", "?").replace("now()", "CURRENT_TIMESTAMP")
+
+
+class _SqliteConnection:
+    def __init__(self, connection: sqlite3.Connection):
+        self._connection = connection
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        if exc_type is None:
+            self._connection.commit()
+        else:
+            self._connection.rollback()
+        self._connection.close()
+
+    def execute(self, sql: str, params=()):
+        return self._connection.execute(_translate_sql(sql), params)
+
+
+def _sqlite_schema_sql() -> str:
+    repo_root = Path(__file__).resolve().parents[3]
+    return (repo_root / "database" / "migrations" / "001_init_sqlite.sql").read_text(encoding="utf-8")
+
+
 def _as_float(value: Any) -> float:
     if value is None:
         return 0.0
@@ -64,6 +113,21 @@ def _as_float(value: Any) -> float:
 
 
 def _connect():
+    if _is_sqlite_url(settings.database_url):
+        path = _sqlite_path(settings.database_url)
+        if path != ":memory:":
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+        connection = sqlite3.connect(path)
+        connection.row_factory = sqlite3.Row
+        connection.execute("pragma foreign_keys = on")
+        exists = connection.execute(
+            "select 1 from sqlite_master where type = 'table' and name = 'source_file'"
+        ).fetchone()
+        if not exists:
+            connection.executescript(_sqlite_schema_sql())
+            connection.commit()
+        return _SqliteConnection(connection)
+
     psycopg, dict_row = _require_psycopg()
     try:
         parsed = urlparse(settings.database_url)
@@ -81,6 +145,42 @@ def _connect():
         )
     except Exception as exc:
         raise HTTPException(status_code=503, detail="database is unavailable") from exc
+
+
+def _franchise_tags(row: Any) -> list[str]:
+    tags: list[str] = []
+    if _as_float(row["total_contribution"]) < 0:
+        tags.append("负贡献")
+    if _as_float(row["inbound_contribution"]) < 0:
+        tags.append("进港亏损")
+    if _as_float(row["deduction_total"]) >= 50000:
+        tags.append("扣款高风险")
+    if _as_float(row["total_contribution"]) > 0:
+        tags.append("正贡献")
+    return tags
+
+
+def _site_tags(row: Any) -> list[str]:
+    tags: list[str] = []
+    if _as_float(row["total_contribution"]) < 0:
+        tags.append("负贡献")
+    if _as_float(row["inbound_contribution"]) < 0:
+        tags.append("进港亏损")
+    if _as_float(row["deduction_total"]) >= 20000:
+        tags.append("扣款关注")
+    if _as_float(row["outbound_tickets"]) >= 5000:
+        tags.append("高票量")
+    if row["site_status"]:
+        tags.append(str(row["site_status"]))
+    return tags
+
+
+def _isoformat(value: Any) -> str | None:
+    if value is None:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
 
 
 def check_database() -> dict[str, str]:
@@ -150,13 +250,7 @@ def get_franchise_rank(period_month: str, region_code: str, metric: str, directi
           inbound_contribution,
           deduction_total,
           outbound_tickets,
-          inbound_signed_tickets,
-          array_remove(array[
-            case when total_contribution < 0 then '负贡献' end,
-            case when inbound_contribution < 0 then '进港亏损' end,
-            case when deduction_total >= 50000 then '扣款高风险' end,
-            case when total_contribution > 0 then '正贡献' end
-          ]::text[], null::text) as tags
+          inbound_signed_tickets
         from fact_franchise_month
         where period_month = %s and region_code = %s
         order by {order_column} {direction} nulls last
@@ -174,7 +268,7 @@ def get_franchise_rank(period_month: str, region_code: str, metric: str, directi
             deduction_total=_as_float(row["deduction_total"]),
             outbound_tickets=_as_float(row["outbound_tickets"]),
             inbound_signed_tickets=_as_float(row["inbound_signed_tickets"]),
-            tags=list(row["tags"] or []),
+            tags=_franchise_tags(row),
         )
         for row in rows
     ]
@@ -198,14 +292,7 @@ def get_site_rank(period_month: str, region_code: str, metric: str, direction: s
           inbound_contribution,
           deduction_total,
           outbound_tickets,
-          inbound_signed_tickets,
-          array_remove(array[
-            case when total_contribution < 0 then '负贡献' end,
-            case when inbound_contribution < 0 then '进港亏损' end,
-            case when deduction_total >= 20000 then '扣款关注' end,
-            case when outbound_tickets >= 5000 then '高票量' end,
-            case when site_status is not null and site_status <> '' then site_status end
-          ]::text[], null::text) as tags
+          inbound_signed_tickets
         from fact_site_month
         where period_month = %s and region_code = %s
         order by {order_column} {direction} nulls last
@@ -225,7 +312,7 @@ def get_site_rank(period_month: str, region_code: str, metric: str, direction: s
             deduction_total=_as_float(row["deduction_total"]),
             outbound_tickets=_as_float(row["outbound_tickets"]),
             inbound_signed_tickets=_as_float(row["inbound_signed_tickets"]),
-            tags=list(row["tags"] or []),
+            tags=_site_tags(row),
         )
         for row in rows
     ]
@@ -427,9 +514,9 @@ def list_import_jobs(period_month: str | None, region_code: str | None, limit: i
             template_code=row["template_code"],
             status=str(row["status"]),
             progress=int(row["progress"]),
-            created_at=row["created_at"].isoformat(),
-            started_at=None if row["started_at"] is None else row["started_at"].isoformat(),
-            finished_at=None if row["finished_at"] is None else row["finished_at"].isoformat(),
+            created_at=_isoformat(row["created_at"]) or "",
+            started_at=_isoformat(row["started_at"]),
+            finished_at=_isoformat(row["finished_at"]),
             message=row["message"],
         )
         for row in rows

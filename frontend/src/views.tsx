@@ -542,7 +542,7 @@ export function OverviewView({
           </div>
           <p className="panel-note">
             总贡献 = 出港总贡献 + 进港总贡献。当前数据
-            {DEMO_MODE ? "用于前端演示，真实上线后来自 PostgreSQL 聚合接口。" : "来自 PostgreSQL 聚合接口。"}
+            {DEMO_MODE ? "用于前端演示，真实上线后来自后端聚合接口。" : "来自本地数据库聚合接口。"}
           </p>
         </article>
 

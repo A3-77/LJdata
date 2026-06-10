@@ -18,6 +18,8 @@ snapshots/
 .env
 .env.*
 !.env.example
+.runtime/
+**/.runtime/
 
 # Logs
 *.log

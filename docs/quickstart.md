@@ -2,6 +2,14 @@
 
 ## 0. Recommended Scripts
 
+The default local workflow now uses SQLite. Docker is not required.
+
+Import the current Excel workbook into the local SQLite database:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-sqlite-local.ps1 -Workbook "C:\path\to\workbook.xlsx"
+```
+
 Start the local frontend and backend:
 
 ```powershell
@@ -13,9 +21,10 @@ This starts:
 ```text
 Frontend: http://127.0.0.1:5173/
 Backend:  http://127.0.0.1:8000/health
+Database: .runtime/dashboard.sqlite
 ```
 
-After Docker Desktop is installed and running, initialize PostgreSQL and import the current workbook:
+PostgreSQL remains available as an optional compatibility path. Use it only when you specifically need to test the container/managed database setup:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup-postgres-docker.ps1
@@ -28,6 +37,29 @@ powershell -ExecutionPolicy Bypass -File scripts/setup-postgres-docker.ps1 -Skip
 ```
 
 ## 1. Database
+
+### Default: SQLite, no Docker
+
+The scripts create and use:
+
+```text
+.runtime/dashboard.sqlite
+```
+
+To initialize SQLite without importing a workbook:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-sqlite-local.ps1 -SkipImport
+```
+
+To use another SQLite file:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-sqlite-local.ps1 -DatabaseUrl "sqlite:///.runtime/my-dashboard.sqlite" -Workbook "C:\path\to\workbook.xlsx"
+powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -DatabaseUrl "sqlite:///.runtime/my-dashboard.sqlite"
+```
+
+### Optional: PostgreSQL/Docker
 
 Start local PostgreSQL:
 
@@ -66,7 +98,7 @@ Validate workbook totals before loading:
 .\.venv\Scripts\python.exe -m import_service.cli validate "C:\Users\A377\Desktop\辽宁区域_加盟商贡献表_202604（测试）.xlsx"
 ```
 
-Load the current workbook into PostgreSQL:
+Load the current workbook into the configured database:
 
 ```powershell
 .\.venv\Scripts\python.exe -m import_service.cli load-workbook "C:\Users\A377\Desktop\辽宁区域_加盟商贡献表_202604（测试）.xlsx" --database-url $env:DATABASE_URL --replace-period
@@ -89,7 +121,7 @@ Run FastAPI:
 
 ```powershell
 cd backend-api
-$env:DATABASE_URL = "postgresql://dashboard:dashboard@127.0.0.1:5432/dashboard"
+$env:DATABASE_URL = "sqlite:///../.runtime/dashboard.sqlite"
 $env:PYTHONPATH = "src"
 ..\.venv\Scripts\python.exe -m uvicorn dashboard_api.main:app --reload --port 8000
 ```
@@ -135,7 +167,7 @@ DASHBOARD_DEFAULT_REGION_NAME
 DASHBOARD_DEFAULT_TEMPLATE_CODE
 ```
 
-When PostgreSQL is not running, dashboard endpoints return `503 database is unavailable` quickly instead of hanging.
+When PostgreSQL is selected but not running, dashboard endpoints return `503 database is unavailable` quickly instead of hanging. SQLite is the default for normal local development.
 
 ## 4. Frontend
 
@@ -165,7 +197,7 @@ Open:
 http://localhost:5173
 ```
 
-If Docker/PostgreSQL is not ready yet, run the frontend in explicit demo mode:
+If the API is not ready yet, run the frontend in explicit demo mode:
 
 ```powershell
 cd frontend
@@ -173,7 +205,7 @@ $env:VITE_DEMO_MODE = "true"
 npm run dev
 ```
 
-Demo mode is only for UI inspection. It uses the validated 202604 overview totals and sample chart rows, while the normal mode still reads the real backend API.
+Demo mode is only for UI inspection. It uses the validated 202604 overview totals and sample chart rows, while the normal mode reads the real backend API backed by SQLite or PostgreSQL.
 
 ## 5. Streamlit Quick Share
 
@@ -238,7 +270,7 @@ Build command: npm run build
 Build output directory: dist
 ```
 
-Set Pages environment variables from `frontend/.env.example`. In production, keep `VITE_DEMO_MODE=false`. Set `VITE_API_BASE_URL` only when the frontend calls a separate Worker origin; leave it empty when `/api/*` is routed to the Worker on the same host.
+Set Pages environment variables from `frontend/.env.example`. In production, keep `VITE_DEMO_MODE=false`. Set `VITE_API_BASE_URL` only when the frontend calls a separate Worker origin; leave it empty when `/api/*` is routed to the Worker on the same host. For static snapshot uploads, the generated snapshot does not need a live database.
 
 ## 7. Backend Container
 
@@ -256,7 +288,7 @@ docker run --rm -p 8000:8000 `
   liaoning-dashboard-backend
 ```
 
-For production, deploy this container to a Python/container host and set:
+For production API hosting, deploy this container to a Python/container host and set:
 
 ```text
 DATABASE_URL
@@ -271,8 +303,9 @@ DASHBOARD_IMPORT_SERVICE_SRC
 Implemented:
 
 - PostgreSQL schema and core seed data.
-- Python workbook inspection, extraction, source file tracking, import job tracking, validation reporting, and PostgreSQL loading CLI.
-- FastAPI dashboard endpoints backed by PostgreSQL.
+- SQLite no-Docker local schema and workbook import script.
+- Python workbook inspection, extraction, source file tracking, import job tracking, validation reporting, and SQLite/PostgreSQL loading CLI.
+- FastAPI dashboard endpoints backed by SQLite locally or PostgreSQL when configured.
 - React dashboard shell backed by API calls, with loading, error, empty states, ranking chart, province-weight heatmap, import diagnostics, import history selection, and workbook upload.
 - Cloudflare Worker API gateway, R2 upload path, Queue producer, and Queue consumer handoff to the backend import runner.
 - Local backend workbook upload endpoint that reuses the Python import CLI.
@@ -281,5 +314,5 @@ Implemented:
 Next:
 
 - Add asynchronous job execution for large workbooks so upload requests do not wait for the whole import.
-- Choose the production backend container host and managed PostgreSQL provider.
+- Choose the production backend container host and managed PostgreSQL provider if a live API is needed beyond static snapshots.
 - Configure real Cloudflare account resources: Pages, Worker routes, R2 bucket, Queue, and secrets.

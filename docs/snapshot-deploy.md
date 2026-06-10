@@ -13,6 +13,7 @@ Production publish: Cloudflare Pages Direct Upload
 Start the local React/FastAPI environment:
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup-sqlite-local.ps1 -Workbook "C:\path\to\workbook.xlsx"
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 ```
 
@@ -22,7 +23,7 @@ Open:
 http://127.0.0.1:5173/
 ```
 
-When PostgreSQL/Docker is available, import the new workbook and review the dashboard locally.
+Import the new workbook into SQLite and review the dashboard locally before building a snapshot. Docker is not required for this weekly workflow.
 
 ## 2. Build A Snapshot
 

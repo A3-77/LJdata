@@ -143,7 +143,7 @@ export function App() {
         {DEMO_MODE ? (
           <section className="notice info">
             <strong>前端演示模式</strong>
-            <span>总览 KPI 使用已校验的 {PERIOD_MONTH} 汇总值，排行和热力图含部分样例数据；接入 PostgreSQL 后会切回真实 API。</span>
+            <span>总览 KPI 使用已校验的 {PERIOD_MONTH} 汇总值，排行和热力图含部分样例数据；接入后端后会切回真实 API。</span>
           </section>
         ) : null}
 

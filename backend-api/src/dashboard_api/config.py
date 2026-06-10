@@ -11,7 +11,10 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 @dataclass(frozen=True)
 class Settings:
-    database_url: str = os.getenv("DATABASE_URL", "postgresql://dashboard:dashboard@127.0.0.1:5432/dashboard")
+    database_url: str = os.getenv(
+        "DATABASE_URL",
+        f"sqlite:///{(REPO_ROOT / '.runtime' / 'dashboard.sqlite').as_posix()}",
+    )
     database_connect_timeout: int = int(os.getenv("DATABASE_CONNECT_TIMEOUT", "3"))
     database_preflight_timeout: float = float(os.getenv("DATABASE_PREFLIGHT_TIMEOUT", "1.0"))
     cors_origins: tuple[str, ...] = tuple(
