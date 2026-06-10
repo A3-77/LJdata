@@ -14,4 +14,4 @@ if (-not (Test-Path (Join-Path $ResolvedSnapshotDir "index.html"))) {
 }
 
 Write-Host "Deploying $ResolvedSnapshotDir to Cloudflare Pages project $ProjectName..."
-npx wrangler pages deploy $ResolvedSnapshotDir --project-name $ProjectName --branch $Branch
+npx --yes wrangler pages deploy $ResolvedSnapshotDir --project-name $ProjectName --branch $Branch

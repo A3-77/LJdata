@@ -59,9 +59,9 @@ if (-not $ProjectName) {
 
 Write-Host "Checking Cloudflare Wrangler login..."
 try {
-  npx wrangler whoami | Out-Host
+  npx --yes wrangler whoami | Out-Host
 } catch {
-  throw "Wrangler is not logged in. Run once: npx wrangler login"
+  throw "Wrangler is not logged in. Run once: npx --yes wrangler login"
 }
 
 & (Join-Path $PSScriptRoot "deploy-cloudflare-snapshot.ps1") `

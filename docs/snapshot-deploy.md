@@ -75,7 +75,7 @@ After the build, the source `frontend/src/snapshotData.ts` is restored, so the r
 Login once if needed:
 
 ```powershell
-npx wrangler login
+npx --yes wrangler login
 ```
 
 Deploy the generated snapshot:
