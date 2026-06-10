@@ -26,6 +26,32 @@ When PostgreSQL/Docker is available, import the new workbook and review the dash
 
 ## 2. Build A Snapshot
 
+Recommended one-command workflow after local review:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/publish-cloudflare-snapshot.ps1 `
+  -ProjectName "<cloudflare-pages-project-name>" `
+  -PeriodMonth "202604" `
+  -RegionCode "LN"
+```
+
+This checks `http://127.0.0.1:8000/ready`, builds a timestamped snapshot, and uploads it to Cloudflare Pages Direct Upload.
+
+You can also save the Cloudflare project name once for the current PowerShell window:
+
+```powershell
+$env:CLOUDFLARE_PAGES_PROJECT = "<cloudflare-pages-project-name>"
+powershell -ExecutionPolicy Bypass -File scripts/publish-cloudflare-snapshot.ps1
+```
+
+To only generate the snapshot without uploading:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/publish-cloudflare-snapshot.ps1 -BuildOnly
+```
+
+Manual two-step workflow:
+
 After the local page looks correct, generate a static snapshot from the local API:
 
 ```powershell
