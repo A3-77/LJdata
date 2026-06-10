@@ -102,6 +102,7 @@ powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -FrontendPort 5
 ```text
 docs/current-usable-workflow.md   当前能做什么、每周怎么操作
 docs/new-computer-setup.md        新电脑安装和运行指南
+docs/excel-template-change-playbook.md  Excel 模板变化和导入失败处理
 docs/snapshot-deploy.md           Cloudflare 快照生成和上传说明
 docs/quickstart.md                快速启动命令
 docs/local-handoff.md             本地交接说明

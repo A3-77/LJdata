@@ -19,6 +19,12 @@ Current usable workflow:
 docs/current-usable-workflow.md
 ```
 
+If a future workbook is not recognized or KPI values look wrong, follow:
+
+```text
+docs/excel-template-change-playbook.md
+```
+
 Read:
 
 ```text

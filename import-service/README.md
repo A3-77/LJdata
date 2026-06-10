@@ -51,6 +51,12 @@ Use `load-workbook` for normal imports. It creates `source_file`, records one `i
 
 Required sheet checks and failed reconciliation rules are persisted to `import_error`. If blocking errors are found, the import job is marked `failed` before fact tables are loaded.
 
+If a future workbook is not recognized because sheet names, header rows, column positions, or business definitions changed, follow:
+
+```text
+../docs/excel-template-change-playbook.md
+```
+
 Current scope:
 
 - Inspect sheet structure.

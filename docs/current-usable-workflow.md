@@ -213,6 +213,7 @@ powershell -ExecutionPolicy Bypass -File scripts/publish-cloudflare-snapshot.ps1
 
 - Cloudflare Pages 上的快照不是实时数据库页面，发布后是只读静态页面。
 - Excel 不会自动从 Cloudflare 页面导入，仍然需要先在本地审核。
+- 如果未来 Excel 的 sheet 名、表头行、字段列位置或业务口径变化，需要先按 `docs/excel-template-change-playbook.md` 扩展模板并重新验证。
 - Cloudflare 登录态和 API Token 不会跟随 GitHub，需要每台发布电脑单独登录或配置。
 - 还没有自动定时发布。
 - 还没有用户权限、多人审批、线上上传队列这类生产系统能力。
