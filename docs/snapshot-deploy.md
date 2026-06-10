@@ -8,6 +8,12 @@ Snapshot build: static React bundle with embedded data
 Production publish: Cloudflare Pages Direct Upload
 ```
 
+For the full current capability list and weekly operator workflow, see:
+
+```text
+docs/current-usable-workflow.md
+```
+
 ## 1. Local Debug
 
 Start the local React/FastAPI environment:

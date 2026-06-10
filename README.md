@@ -39,11 +39,11 @@ outputs/
 
 ## 推荐下一步
 
-1. 新电脑先阅读 `docs/new-computer-setup.md`，运行 `scripts/check-local-env.ps1` 检测环境。
-2. 用 `scripts/setup-sqlite-local.ps1` 导入每周 Excel，在 `http://127.0.0.1:5173/` 本地预览。
-3. 预览确认后用 `scripts/publish-cloudflare-snapshot.ps1` 生成并上传 Cloudflare Pages 快照。
-4. 增加行级导入异常明细。
-5. 为前端补更多图表页面和下钻筛选。
+1. 先阅读 `docs/current-usable-workflow.md`，了解当前已经能做到什么。
+2. 新电脑先阅读 `docs/new-computer-setup.md`，运行 `scripts/check-local-env.ps1` 检测环境。
+3. 用 `scripts/setup-sqlite-local.ps1` 导入每周 Excel，在 `http://127.0.0.1:5173/` 本地预览。
+4. 预览确认后用 `scripts/publish-cloudflare-snapshot.ps1` 生成并上传 Cloudflare Pages 快照。
+5. 后续再补行级导入异常明细和更多图表下钻。
 
 ## 当前状态
 
@@ -58,6 +58,7 @@ outputs/
 启动说明见：
 
 ```text
+docs/current-usable-workflow.md
 docs/quickstart.md
 docs/new-computer-setup.md
 ```

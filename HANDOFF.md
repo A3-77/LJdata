@@ -13,6 +13,12 @@ Do not send source Excel files, `.env` files, local uploads, `.venv`, `node_modu
 
 ## New Computer Setup
 
+Current usable workflow:
+
+```text
+docs/current-usable-workflow.md
+```
+
 Read:
 
 ```text
