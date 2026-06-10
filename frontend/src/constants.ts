@@ -2,6 +2,7 @@ import type { ViewKey } from "./types";
 
 export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
+export const SNAPSHOT_MODE = import.meta.env.VITE_SNAPSHOT_MODE === "true";
 export const PERIOD_MONTH = import.meta.env.VITE_PERIOD_MONTH ?? "202604";
 export const REGION_CODE = import.meta.env.VITE_REGION_CODE ?? "LN";
 export const REGION_LABEL = import.meta.env.VITE_REGION_LABEL ?? "辽宁";

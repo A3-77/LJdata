@@ -209,6 +209,19 @@ docs/local-handoff.md
 
 ## 6. Cloudflare Worker
 
+For the reviewed weekly snapshot flow, use Cloudflare Pages Direct Upload instead of a GitHub-triggered build:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build-cloudflare-snapshot.ps1 -PeriodMonth "202604" -RegionCode "LN"
+powershell -ExecutionPolicy Bypass -File scripts/deploy-cloudflare-snapshot.ps1 -SnapshotDir "snapshots/<snapshot-folder>" -ProjectName "<cloudflare-pages-project>"
+```
+
+Details are in:
+
+```text
+docs/snapshot-deploy.md
+```
+
 Run the Worker gateway:
 
 ```powershell

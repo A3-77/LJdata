@@ -31,6 +31,7 @@ cd ..\..
 ## Run Locally
 
 For packaged-code troubleshooting and the simplest reviewer workflow, see `docs/local-handoff.md`.
+For the weekly React snapshot and Cloudflare Direct Upload workflow, see `docs/snapshot-deploy.md`.
 
 Start Docker Desktop first.
 

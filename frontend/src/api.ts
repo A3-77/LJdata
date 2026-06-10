@@ -1,5 +1,6 @@
-import { API_BASE, DEMO_MODE, IMPORT_JOB_ID, PERIOD_MONTH, REGION_CODE, REGION_LABEL, TEMPLATE_CODE } from "./constants";
+import { API_BASE, DEMO_MODE, IMPORT_JOB_ID, PERIOD_MONTH, REGION_CODE, REGION_LABEL, SNAPSHOT_MODE, TEMPLATE_CODE } from "./constants";
 import { demoData } from "./demoData";
+import { snapshotData } from "./snapshotData";
 import type {
   ContributionHeatmap,
   DashboardData,
@@ -70,6 +71,12 @@ export async function fetchImportDiagnostics(jobId: number): Promise<{
       importValidation: demoData.importValidation,
     };
   }
+  if (SNAPSHOT_MODE) {
+    return {
+      importErrors: snapshotData.importErrors,
+      importValidation: snapshotData.importValidation,
+    };
+  }
 
   const [importValidation, importErrors] = await Promise.all([
     fetchOptionalJson<ImportValidationResponse>(`/api/import/jobs/${jobId}/validation-results`),
@@ -81,6 +88,9 @@ export async function fetchImportDiagnostics(jobId: number): Promise<{
 export async function fetchDashboardData(): Promise<DashboardData> {
   if (DEMO_MODE) {
     return demoData;
+  }
+  if (SNAPSHOT_MODE) {
+    return snapshotData;
   }
 
   const params = `period_month=${PERIOD_MONTH}&region_code=${REGION_CODE}`;
@@ -113,6 +123,9 @@ export async function fetchDashboardData(): Promise<DashboardData> {
 export async function uploadImportFile(file: File): Promise<UploadImportResponse> {
   if (DEMO_MODE) {
     throw new Error("演示模式不能上传文件，请连接真实 API 后再导入。");
+  }
+  if (SNAPSHOT_MODE) {
+    throw new Error("快照版本是只读静态页面，请回到本地调试环境上传新文件。");
   }
 
   const formData = new FormData();
