@@ -35,12 +35,13 @@ powershell -ExecutionPolicy Bypass -File scripts/publish-cloudflare-snapshot.ps1
   -RegionCode "LN"
 ```
 
-This checks `http://127.0.0.1:8000/ready`, builds a timestamped snapshot, and uploads it to Cloudflare Pages Direct Upload.
+This checks `http://127.0.0.1:8000/ready`, builds a timestamped snapshot, and uploads it to Cloudflare Pages Direct Upload. The default branch is `test-4`, matching the production branch used when the first Pages project was created. To use another production branch, pass `-Branch "<branch-name>"` or set `$env:CLOUDFLARE_PAGES_BRANCH`.
 
 You can also save the Cloudflare project name once for the current PowerShell window:
 
 ```powershell
 $env:CLOUDFLARE_PAGES_PROJECT = "<cloudflare-pages-project-name>"
+$env:CLOUDFLARE_PAGES_BRANCH = "test-4"
 powershell -ExecutionPolicy Bypass -File scripts/publish-cloudflare-snapshot.ps1
 ```
 

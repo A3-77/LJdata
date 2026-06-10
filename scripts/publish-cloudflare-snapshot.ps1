@@ -3,7 +3,7 @@ param(
   [string]$PeriodMonth = "202604",
   [string]$RegionCode = "LN",
   [string]$ProjectName = $env:CLOUDFLARE_PAGES_PROJECT,
-  [string]$Branch = "snapshot",
+  [string]$Branch = $(if ($env:CLOUDFLARE_PAGES_BRANCH) { $env:CLOUDFLARE_PAGES_BRANCH } else { "test-4" }),
   [string]$SnapshotName = "",
   [switch]$SkipFetch,
   [switch]$SkipReadyCheck,

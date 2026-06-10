@@ -3,7 +3,7 @@ param(
   [string]$SnapshotDir,
   [Parameter(Mandatory = $true)]
   [string]$ProjectName,
-  [string]$Branch = "snapshot"
+  [string]$Branch = $(if ($env:CLOUDFLARE_PAGES_BRANCH) { $env:CLOUDFLARE_PAGES_BRANCH } else { "test-4" })
 )
 
 $ErrorActionPreference = "Stop"
