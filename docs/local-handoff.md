@@ -1,96 +1,82 @@
 # Local Handoff Guide
 
-## Why A Packaged Copy May Not Open
+## 为什么 clone 或压缩包不能直接打开
 
-This project has two local entry points, and they need different runtime pieces:
+GitHub 只保存源码，不保存每台电脑本地生成的运行环境：
 
-| Entry | Port | Needs | Use case |
-|---|---:|---|---|
-| Streamlit quick-share | 8501 | Python dependencies, uploaded Excel | Fast local review without database, supports one or more months |
-| React dashboard | 5173 | Node.js frontend, FastAPI backend, SQLite file | Full engineering dashboard |
-| FastAPI backend | 8000 | Python dependencies, SQLite by default | API for React dashboard |
-| SQLite | file | Python standard library | Default persistent imported data |
-| PostgreSQL | 5432 | Docker Desktop or local PostgreSQL | Optional compatibility/production database |
+```text
+.venv/
+node_modules/
+.runtime/dashboard.sqlite
+.wrangler/
+data/uploads/
+*.xlsx
+```
 
-Common reasons another computer cannot open a local port:
+所以新电脑需要先安装依赖，再导入 Excel。
 
-- The server was not started. Opening `http://127.0.0.1:8501` only works after running the Streamlit command.
-- Dependencies were not installed. A zip file does not include `.venv` or `node_modules`.
-- The Excel data is not in the repository. `data/uploads/` is ignored by git, so the user must upload the workbook again.
-- The full React version needs an imported SQLite database by default. If no workbook has been imported yet, the frontend may open but API data will be empty.
-- The port is already occupied by another process. Use `-Port 8502`, `-FrontendPort 5174`, or another free port.
-- Hidden files may be missed in a manual zip. Files like `.streamlit/config.toml` affect visual consistency.
+## 推荐交接方式
 
-## Recommended Way To Hand Off
-
-Prefer GitHub over a manual zip:
+推荐用 GitHub：
 
 ```powershell
 git clone https://github.com/A3-77/LJdata.git
 cd LJdata
 ```
 
-If a zip must be used, zip the repository root after pulling latest code, and include hidden files. Do not expect `.venv`, `node_modules`, database data, or uploaded Excel files to be inside the package.
+压缩包只适合临时离线备份。即使使用压缩包，也不要指望里面带有 Python 虚拟环境、Node 依赖、本地数据库、Excel 源文件或 Cloudflare 登录状态。
 
-## Fastest Local Start
-
-For a non-technical reviewer, start with Streamlit:
+## 新电脑第一步
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/start-streamlit.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check-local-env.ps1
+powershell -ExecutionPolicy Bypass -File scripts/bootstrap-local.ps1
+powershell -ExecutionPolicy Bypass -File scripts/check-local-env.ps1
 ```
 
-Open:
-
-```text
-http://127.0.0.1:8501/
-```
-
-Then upload the Excel workbook in the left sidebar.
-
-If port `8501` is busy:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts/start-streamlit.ps1 -Port 8502
-```
-
-## Full Engineering Start
-
-For the React/FastAPI/SQLite version:
+## React/FastAPI/SQLite 完整本地启动
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/setup-sqlite-local.ps1 -Workbook "C:\path\to\workbook.xlsx"
 powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1
 ```
 
-Open:
+打开：
 
 ```text
-Frontend: http://127.0.0.1:5173/
-Backend:  http://127.0.0.1:8000/health
+http://127.0.0.1:5173/
 ```
 
-The default database file is:
+默认数据库文件：
 
 ```text
 .runtime/dashboard.sqlite
 ```
 
-Docker/PostgreSQL is now optional:
+## Streamlit 快速查看
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/setup-postgres-docker.ps1
-powershell -ExecutionPolicy Bypass -File scripts/start-local.ps1 -DatabaseUrl "postgresql://dashboard:dashboard@127.0.0.1:5432/dashboard"
+powershell -ExecutionPolicy Bypass -File scripts/start-streamlit.ps1
 ```
 
-## Why The Page May Look Different
+打开：
 
-Differences usually come from:
+```text
+http://127.0.0.1:8501/
+```
 
-- Different Streamlit versions. `requirements.txt` is pinned to reduce this.
-- Different theme settings. `.streamlit/config.toml` fixes the dashboard to a light theme.
-- Different browser zoom, font rendering, or operating system.
-- Different data. The uploaded workbook controls KPI, single-ticket contribution, concentration, flow risk, dispatch-fee proxy analysis, and validation results.
-- Opening the wrong entry point. Streamlit and React are separate implementations.
+然后在页面里上传 Excel。
 
-Use Streamlit for quick sharing. Use React/FastAPI/SQLite for continued engineering work. Use PostgreSQL only when testing a live API deployment path.
+## 页面看起来不一样的常见原因
+
+- 没有导入同一份 Excel。
+- 依赖没安装完整。
+- 打开了错误入口，Streamlit 和 React 是两套界面。
+- 浏览器缩放、系统字体或屏幕尺寸不同。
+- 本地端口被其他程序占用。
+
+更多完整流程见：
+
+```text
+docs/new-computer-setup.md
+```

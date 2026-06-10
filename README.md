@@ -10,7 +10,7 @@
 | `frontend/` | React/Vite 前端看板 |
 | `backend-api/` | API 服务，建议 FastAPI 或 Workers API 适配层 |
 | `import-service/` | Python Excel 导入、清洗、校验、入库服务 |
-| `database/migrations/` | SQLite/PostgreSQL 建表和变更脚本 |
+| `database/migrations/` | SQLite 本地建表脚本和历史 SQL |
 | `database/seeds/` | 初始字典、指标、标签、模板配置 |
 | `cloudflare/workers/` | Cloudflare Workers API 网关代码 |
 | `cloudflare/r2/` | R2 bucket、文件路径、对象存储约定 |
@@ -49,9 +49,9 @@ outputs/
 
 已创建 MVP 工程骨架：
 
-- `database/`：SQLite/PostgreSQL 建表脚本和种子数据。
+- `database/`：SQLite 本地建表脚本和历史 SQL。
 - `import-service/`：Python Excel 检查、抽取、source/import job 记录、校验报告、入库 CLI。
-- `backend-api/`：FastAPI 查询接口，默认对接本地 SQLite，也保留 PostgreSQL 兼容。
+- `backend-api/`：FastAPI 查询接口，默认对接本地 SQLite。
 - `frontend/`：React/Vite 看板，已从 API 拉取总览、Top/Bottom 排行，并渲染排行图和目的省份/公斤段热力图。
 - `cloudflare/`：Workers、R2、Queues 入口骨架。
 

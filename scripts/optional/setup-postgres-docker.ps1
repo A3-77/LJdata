@@ -8,7 +8,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$ComposeFile = Join-Path $RepoRoot "ops\docker\docker-compose.postgres.yml"
 
 if (-not $RegionName) {
   $RegionName = -join ([char]0x8FBD, [char]0x5B81, [char]0x533A, [char]0x57DF)
@@ -34,7 +35,7 @@ if (-not (Test-Path (Join-Path $RepoRoot ".venv\Scripts\python.exe"))) {
 
 Write-Host "Starting PostgreSQL container..."
 Push-Location $RepoRoot
-docker compose up -d postgres
+docker compose -f $ComposeFile up -d postgres
 
 Write-Host "Waiting for PostgreSQL health check..."
 $ready = $false
@@ -47,23 +48,23 @@ for ($i = 1; $i -le 40; $i++) {
   Start-Sleep -Seconds 2
 }
 if (-not $ready) {
-  throw "PostgreSQL container did not become healthy. Check: docker compose logs postgres"
+  throw "PostgreSQL container did not become healthy. Check: docker compose -f ops/docker/docker-compose.postgres.yml logs postgres"
 }
 
-$schemaReady = docker compose exec -T postgres psql -U dashboard -d dashboard -tAc "select to_regclass('public.source_file')" 2>$null
+$schemaReady = docker compose -f $ComposeFile exec -T postgres psql -U dashboard -d dashboard -tAc "select to_regclass('public.source_file')" 2>$null
 if ($schemaReady -match "source_file") {
   Write-Host "Database schema already exists. Skipping migration."
 } else {
   Write-Host "Applying database schema..."
-  Get-Content "database/migrations/001_init.sql" -Encoding utf8 | docker compose exec -T postgres psql -U dashboard -d dashboard
+  Get-Content "database/migrations/001_init.sql" -Encoding utf8 | docker compose -f $ComposeFile exec -T postgres psql -U dashboard -d dashboard
 }
 
-$seedCount = docker compose exec -T postgres psql -U dashboard -d dashboard -tAc "select count(*) from dim_region" 2>$null
+$seedCount = docker compose -f $ComposeFile exec -T postgres psql -U dashboard -d dashboard -tAc "select count(*) from dim_region" 2>$null
 if ([int]$seedCount.Trim() -gt 0) {
   Write-Host "Seed data already exists. Skipping seeds."
 } else {
   Write-Host "Applying seed data..."
-  Get-Content "database/seeds/001_seed_core.sql" -Encoding utf8 | docker compose exec -T postgres psql -U dashboard -d dashboard
+  Get-Content "database/seeds/001_seed_core.sql" -Encoding utf8 | docker compose -f $ComposeFile exec -T postgres psql -U dashboard -d dashboard
 }
 
 if (-not $SkipImport) {

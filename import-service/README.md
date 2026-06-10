@@ -29,7 +29,7 @@ Validate workbook totals:
 python -m import_service.cli validate "C:\path\to\file.xlsx"
 ```
 
-Load summary rows into the configured database. SQLite is the default local database and does not require Docker:
+Load summary rows into the configured database. SQLite is the default local database:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ..\scripts\setup-sqlite-local.ps1 -Workbook "C:\path\to\file.xlsx"
@@ -60,8 +60,8 @@ Current scope:
 - Extract normalized rows from `总表-网点`.
 - Unpivot `辽宁区域贡献`.
 - Unpivot `加盟商贡献`.
-- Load summary rows into SQLite locally or PostgreSQL when configured.
-- Load contribution flow rows into SQLite locally or PostgreSQL when configured.
+- Load summary rows into SQLite locally.
+- Load contribution flow rows into SQLite locally.
 - Persist `source_file`, `source_sheet`, and `import_job` for supported workbook imports.
 - Generate summary total validation reports.
 - Persist import errors for missing required sheets, failed reconciliation rules, and runtime failures.
