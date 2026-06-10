@@ -25,6 +25,8 @@ class RankItem(BaseModel):
     outbound_contribution: float | None = None
     inbound_contribution: float | None = None
     deduction_total: float | None = None
+    outbound_tickets: float | None = None
+    inbound_signed_tickets: float | None = None
     tags: list[str] = Field(default_factory=list)
 
 

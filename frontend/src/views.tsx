@@ -24,6 +24,8 @@ function contributionShare(items: RankItem[], totalContribution: number | null |
 }
 
 export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
+  const [displayMode, setDisplayMode] = useState<"table" | "card" | "threshold">("table");
+  const [selectedFranchise, setSelectedFranchise] = useState("");
   const overview = data?.overview;
   const topRank = data?.topRank ?? [];
   const bottomRank = data?.bottomRank ?? [];
@@ -39,6 +41,12 @@ export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
   const dispatchRiskSites = siteRank
     .filter((item) => (item.deduction_total ?? 0) >= 20000 || item.total_contribution < 0 || (item.inbound_contribution ?? 0) < 0)
     .slice(0, 6);
+  const franchiseRows = [...topRank, ...bottomRank];
+  const activeFranchiseName = selectedFranchise || topRank[0]?.name || franchiseRows[0]?.name || "";
+  const activeFranchise = franchiseRows.find((item) => item.name === activeFranchiseName);
+  const thresholdRows = [...lowContributionItems, ...bottomRank]
+    .filter((item, index, rows) => rows.findIndex((row) => row.name === item.name) === index)
+    .slice(0, 12);
 
   return (
     <section className="analysis-view">
@@ -125,20 +133,132 @@ export function AnalysisGuideView({ data }: { data: DashboardData | null }) {
             <h2>数据展示形式</h2>
             <span>大表 + 卡片</span>
           </div>
-          <div className="analysis-cards">
-            <div>
+          <div className="analysis-cards" role="tablist" aria-label="数据展示形式">
+            <button
+              type="button"
+              className={displayMode === "table" ? "analysis-option active" : "analysis-option"}
+              aria-pressed={displayMode === "table"}
+              onClick={() => setDisplayMode("table")}
+            >
               <strong>大表表现</strong>
               <span>制作整体大表，涵盖时间、加盟商、项目结果、流向和负值标签，作为财务咨询和运营复核入口。</span>
-            </div>
-            <div>
+            </button>
+            <button
+              type="button"
+              className={displayMode === "card" ? "analysis-option active" : "analysis-option"}
+              aria-pressed={displayMode === "card"}
+              onClick={() => setDisplayMode("card")}
+            >
               <strong>卡片展示</strong>
               <span>选择加盟商后展示总贡献、单票贡献、贡献占比、风险标签；多月数据接入后展示历史贡献变化。</span>
-            </div>
-            <div>
+            </button>
+            <button
+              type="button"
+              className={displayMode === "threshold" ? "analysis-option active" : "analysis-option"}
+              aria-pressed={displayMode === "threshold"}
+              onClick={() => setDisplayMode("threshold")}
+            >
               <strong>阈值复核</strong>
               <span>低于 3 毛、4 毛或为负的样本进入风险清单，并可继续下钻网点、流向和扣款。</span>
-            </div>
+            </button>
           </div>
+
+          {displayMode === "table" ? (
+            <div className="analysis-mode-panel">
+              <div className="panel-head compact">
+                <h2>整体大表</h2>
+                <span>Top + Bottom 样本，真实 API 当前返回 Top 30 / Bottom 12</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>加盟商</th>
+                    <th>总贡献</th>
+                    <th>出港贡献</th>
+                    <th>进港贡献</th>
+                    <th>扣款</th>
+                    <th>标签</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {franchiseRows.length ? (
+                    franchiseRows.map((item) => (
+                      <tr key={`${item.name}-${item.total_contribution}`}>
+                        <td>{item.name}</td>
+                        <td className={item.total_contribution < 0 ? "negative-text" : ""}>{signedMoneyWan(item.total_contribution)}</td>
+                        <td>{signedMoneyWan(item.outbound_contribution)}</td>
+                        <td className={(item.inbound_contribution ?? 0) < 0 ? "negative-text" : ""}>{signedMoneyWan(item.inbound_contribution)}</td>
+                        <td className={(item.deduction_total ?? 0) >= 50000 ? "negative-text" : ""}>{moneyWan(item.deduction_total)}</td>
+                        <td>{item.tags.join(" / ") || "正常"}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <EmptyRows colSpan={6} />
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
+          {displayMode === "card" ? (
+            <div className="analysis-mode-panel">
+              <div className="analysis-toolbar">
+                <label>
+                  选择加盟商
+                  <select value={activeFranchiseName} onChange={(event) => setSelectedFranchise(event.target.value)}>
+                    {franchiseRows.map((item) => (
+                      <option key={`${item.name}-${item.total_contribution}`} value={item.name}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <section className="kpi-grid compact-kpis">
+                <KpiCard label="总贡献" value={moneyWan(activeFranchise?.total_contribution)} tone={(activeFranchise?.total_contribution ?? 0) < 0 ? "risk" : "good"} />
+                <KpiCard label="单票贡献" value={unitContribution(activeFranchise?.total_contribution, activeFranchise?.outbound_tickets).toFixed(3)} />
+                <KpiCard label="出港票量" value={countWan(activeFranchise?.outbound_tickets)} />
+                <KpiCard label="进港贡献" value={signedMoneyWan(activeFranchise?.inbound_contribution)} tone={(activeFranchise?.inbound_contribution ?? 0) < 0 ? "risk" : "neutral"} />
+                <KpiCard label="扣款" value={moneyWan(activeFranchise?.deduction_total)} tone={(activeFranchise?.deduction_total ?? 0) >= 50000 ? "risk" : "neutral"} />
+              </section>
+              <p className="panel-note">多月数据入库后，这里会追加该加盟商历史贡献变化。当前先展示当月总值与风险标签。</p>
+            </div>
+          ) : null}
+
+          {displayMode === "threshold" ? (
+            <div className="analysis-mode-panel">
+              <div className="panel-head compact">
+                <h2>阈值复核样本</h2>
+                <span>负贡献 / 亏损 / 高扣款 / 低贡献标签</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>对象</th>
+                    <th>总贡献</th>
+                    <th>进港贡献</th>
+                    <th>扣款</th>
+                    <th>处理建议</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {thresholdRows.length ? (
+                    thresholdRows.map((item) => (
+                      <tr key={`${item.name}-${item.total_contribution}`}>
+                        <td>{item.name}</td>
+                        <td className={item.total_contribution < 0 ? "negative-text" : ""}>{signedMoneyWan(item.total_contribution)}</td>
+                        <td className={(item.inbound_contribution ?? 0) < 0 ? "negative-text" : ""}>{signedMoneyWan(item.inbound_contribution)}</td>
+                        <td className={(item.deduction_total ?? 0) >= 50000 ? "negative-text" : ""}>{moneyWan(item.deduction_total)}</td>
+                        <td>{item.tags.join(" / ") || "继续复核单票贡献"}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <EmptyRows colSpan={5} />
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
         </article>
 
         <article className="panel wide analysis-section">

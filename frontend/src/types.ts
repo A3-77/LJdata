@@ -18,6 +18,8 @@ export type RankItem = {
   outbound_contribution: number | null;
   inbound_contribution: number | null;
   deduction_total: number | null;
+  outbound_tickets?: number | null;
+  inbound_signed_tickets?: number | null;
   tags: string[];
 };
 

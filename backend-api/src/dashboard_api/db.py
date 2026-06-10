@@ -149,6 +149,8 @@ def get_franchise_rank(period_month: str, region_code: str, metric: str, directi
           outbound_contribution,
           inbound_contribution,
           deduction_total,
+          outbound_tickets,
+          inbound_signed_tickets,
           array_remove(array[
             case when total_contribution < 0 then '负贡献' end,
             case when inbound_contribution < 0 then '进港亏损' end,
@@ -170,6 +172,8 @@ def get_franchise_rank(period_month: str, region_code: str, metric: str, directi
             outbound_contribution=_as_float(row["outbound_contribution"]),
             inbound_contribution=_as_float(row["inbound_contribution"]),
             deduction_total=_as_float(row["deduction_total"]),
+            outbound_tickets=_as_float(row["outbound_tickets"]),
+            inbound_signed_tickets=_as_float(row["inbound_signed_tickets"]),
             tags=list(row["tags"] or []),
         )
         for row in rows

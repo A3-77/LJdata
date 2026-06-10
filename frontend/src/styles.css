@@ -385,13 +385,13 @@ h2 {
 }
 
 .analysis-list strong,
-.analysis-cards strong,
+.analysis-option strong,
 .dispatch-factor-grid strong {
   font-size: 14px;
 }
 
 .analysis-list span,
-.analysis-cards span,
+.analysis-option span,
 .dispatch-factor-grid span {
   color: var(--muted);
   font-size: 13px;
@@ -426,7 +426,7 @@ h2 {
   gap: 12px;
 }
 
-.analysis-cards div,
+.analysis-option,
 .dispatch-factor-grid div {
   display: grid;
   align-content: start;
@@ -436,6 +436,68 @@ h2 {
   border-radius: 8px;
   padding: 14px;
   background: var(--surface-2);
+}
+
+.analysis-option {
+  width: 100%;
+  height: auto;
+  text-align: left;
+  cursor: pointer;
+}
+
+.analysis-option:hover,
+.analysis-option:focus-visible,
+.analysis-option.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+  outline: none;
+}
+
+.analysis-option.active strong {
+  color: #1f469f;
+}
+
+.analysis-mode-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfcfe;
+}
+
+.panel-head.compact {
+  margin-bottom: 0;
+}
+
+.analysis-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.analysis-toolbar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.analysis-toolbar select {
+  min-width: min(520px, 78vw);
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.compact-kpis {
+  margin-bottom: 0;
 }
 
 .import-summary {
