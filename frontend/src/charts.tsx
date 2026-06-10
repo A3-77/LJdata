@@ -50,7 +50,7 @@ export function RankChart({ items }: { items: RankItem[] }) {
       xAxis: {
         type: "value",
         axisLabel: { formatter: (value: number) => `${value.toFixed(0)}万` },
-        splitLine: { lineStyle: { color: "#eef2f7" } },
+        splitLine: { lineStyle: { color: "#edf1f4" } },
       },
       yAxis: {
         type: "category",
@@ -59,7 +59,7 @@ export function RankChart({ items }: { items: RankItem[] }) {
         axisLabel: {
           width: 120,
           overflow: "truncate",
-          color: "#334155",
+          color: "#42505b",
         },
       },
       series: [
@@ -67,11 +67,11 @@ export function RankChart({ items }: { items: RankItem[] }) {
           type: "bar",
           data: items.map((item) => Number((item.total_contribution / 10000).toFixed(2))),
           barWidth: 14,
-          itemStyle: { color: "#2454d6", borderRadius: [0, 4, 4, 0] },
+          itemStyle: { color: "#2d6476", borderRadius: [0, 3, 3, 0] },
           label: {
             show: true,
             position: "right",
-            color: "#17202f",
+            color: "#18222d",
             formatter: (params: any) => `${Number(params.value).toLocaleString("zh-CN", { maximumFractionDigits: 1 })}万`,
           },
         },
@@ -120,14 +120,14 @@ export function HeatmapChartView({ heatmap }: { heatmap: ContributionHeatmap | n
         xAxis: {
           type: "category",
           data: weightBands,
-          axisLabel: { color: "#334155", interval: 0 },
+          axisLabel: { color: "#42505b", interval: 0 },
           splitArea: { show: true },
         },
         yAxis: {
           type: "category",
           inverse: true,
           data: provinces,
-          axisLabel: { color: "#334155" },
+          axisLabel: { color: "#42505b" },
           splitArea: { show: true },
         },
         visualMap: {
@@ -138,7 +138,7 @@ export function HeatmapChartView({ heatmap }: { heatmap: ContributionHeatmap | n
           left: "center",
           bottom: 8,
           text: ["高", "低"],
-          inRange: { color: ["#b33a2e", "#f8fafc", "#147a46"] },
+          inRange: { color: ["#9f3b33", "#f6f7f8", "#196c45"] },
         },
         series: [
           {
@@ -151,7 +151,7 @@ export function HeatmapChartView({ heatmap }: { heatmap: ContributionHeatmap | n
             )),
             emphasis: {
               itemStyle: {
-                borderColor: "#17202f",
+                borderColor: "#18222d",
                 borderWidth: 1,
               },
             },

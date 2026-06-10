@@ -73,7 +73,7 @@ export function App() {
       item.total_contribution < 0 ||
       (item.inbound_contribution ?? 0) < 0 ||
       (item.deduction_total ?? 0) > 50000
-    )) ?? [];
+    )).slice(0, 8) ?? [];
   }, [data]);
 
   const overview = data?.overview;

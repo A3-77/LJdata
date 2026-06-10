@@ -551,7 +551,7 @@ export function OverviewView({
             <h2>加盟商贡献排行</h2>
             <span>Top 8</span>
           </div>
-          <RankChart items={data?.topRank ?? []} />
+          <RankChart items={data?.topRank.slice(0, 8) ?? []} />
           <div className="rank-list compact-list">
             {data?.topRank.slice(0, 4).map((item) => <RankBar key={item.name} item={item} max={maxContribution} />)}
           </div>
@@ -869,7 +869,7 @@ export function FranchiseView({ data, maxContribution }: { data: DashboardData |
             <h2>加盟商贡献 Top 8</h2>
             <span>总贡献 / 万元</span>
           </div>
-          <RankChart items={topItems} />
+          <RankChart items={topItems.slice(0, 8)} />
         </article>
 
         <article className="panel">
